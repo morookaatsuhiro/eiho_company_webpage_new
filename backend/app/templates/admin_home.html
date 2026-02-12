@@ -219,7 +219,7 @@
       </details>
 
       <details class="section">
-        <summary><span class="section-title">概念 / 使命愿景</span></summary>
+        <summary><span class="section-title">概念 / Mission / Vision / Value</span></summary>
         <div class="section-body">
           <div class="grid">
             <div class="full">
@@ -291,6 +291,14 @@
             <div>
               <label for="vision_body">Vision 内容</label>
               <textarea id="vision_body" name="vision_body">{{ home.vision_body or '' }}</textarea>
+            </div>
+            <div>
+              <label for="value_title">Value 标题</label>
+              <input id="value_title" name="value_title" value="{{ home.value_title or '' }}" placeholder="Value">
+            </div>
+            <div>
+              <label for="value_body">Value 内容</label>
+              <textarea id="value_body" name="value_body">{{ home.value_body or '' }}</textarea>
             </div>
           </div>
         </div>
@@ -597,30 +605,55 @@
               <label for="profile_subtitle">区块描述</label>
               <textarea id="profile_subtitle" name="profile_subtitle">{{ home.profile_subtitle or '' }}</textarea>
             </div>
-            <div>
-              <label for="company_name">公司名称</label>
-              <input id="company_name" name="company_name" value="{{ home.company_name or '' }}" placeholder="株式会社 衛宝">
-            </div>
-            <div>
-              <label for="established">设立</label>
-              <input id="established" name="established" value="{{ home.established or '' }}" placeholder="2020年1月">
-            </div>
+            <input id="company_name" name="company_name" value="{{ home.company_name or '' }}" hidden>
+            <input id="established" name="established" value="{{ home.established or '' }}" hidden>
+            <input id="address" name="address" value="{{ home.address or '' }}" hidden>
+            <input id="representative" name="representative" value="{{ home.representative or '' }}" hidden>
+            <textarea id="business_desc" name="business_desc" hidden>{{ home.business_desc or '' }}</textarea>
+            <textarea id="clients" name="clients" hidden>{{ home.clients or '' }}</textarea>
             <div class="full">
-              <label for="address">地址</label>
-              <input id="address" name="address" value="{{ home.address or '' }}" placeholder="〒000-0000 東京都…">
-            </div>
-            <div>
-              <label for="representative">代表者</label>
-              <input id="representative" name="representative" value="{{ home.representative or '' }}" placeholder="代表者名">
-            </div>
-            <div class="full">
-              <label for="business_desc">事業内容（可分行）</label>
-              <textarea id="business_desc" name="business_desc" placeholder="事業内容の説明">{{ home.business_desc or '' }}</textarea>
-              <div class="hint">每行一条，将在前端转换成列表。</div>
-            </div>
-            <div class="full">
-              <label for="clients">主要取引先</label>
-              <textarea id="clients" name="clients" placeholder="取引先一覧">{{ home.clients or '' }}</textarea>
+              <h4>会社概要表格行（可新增/删除）</h4>
+              <div class="hint">统一在这里编辑公司概要，避免重复维护。左侧为项目名，右侧为内容。</div>
+              <div id="profileRowsList">
+                {% if profile_rows and profile_rows|length > 0 %}
+                  {% for row in profile_rows %}
+                    <div class="item-row">
+                      <div class="item-fields simple">
+                        <div>
+                          <label>项目名</label>
+                          <input name="profile_row_label" value="{{ row.label or '' }}" placeholder="例如：所在地">
+                        </div>
+                        <div>
+                          <label>内容</label>
+                          <textarea name="profile_row_value" placeholder="例如：〒000-0000 東京都...">{{ row.value or '' }}</textarea>
+                        </div>
+                      </div>
+                      <div class="item-actions">
+                        <button type="button" class="btn btn-danger" data-remove>删除</button>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="item-row">
+                    <div class="item-fields simple">
+                      <div>
+                        <label>项目名</label>
+                        <input name="profile_row_label" value="名称" placeholder="例如：所在地">
+                      </div>
+                      <div>
+                        <label>内容</label>
+                        <textarea name="profile_row_value" placeholder="例如：〒000-0000 東京都...">{{ home.company_name or '' }}</textarea>
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <button type="button" class="btn btn-danger" data-remove>删除</button>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="item-actions">
+                <button type="button" class="btn btn-outline" data-add-profile-row>+ 添加表格行</button>
+              </div>
             </div>
           </div>
         </div>
@@ -854,6 +887,24 @@
     </div>
   </template>
 
+  <template id="profileRowTpl">
+    <div class="item-row">
+      <div class="item-fields simple">
+        <div>
+          <label>项目名</label>
+          <input name="profile_row_label" value="" placeholder="例如：所在地">
+        </div>
+        <div>
+          <label>内容</label>
+          <textarea name="profile_row_value" placeholder="例如：〒000-0000 東京都..."></textarea>
+        </div>
+      </div>
+      <div class="item-actions">
+        <button type="button" class="btn btn-danger" data-remove>删除</button>
+      </div>
+    </div>
+  </template>
+
   <script>
     const addItem = (listId, tplId) => {
       const list = document.getElementById(listId);
@@ -881,6 +932,9 @@
       }
       if (el.closest("[data-add-contact-example]")) {
         addItem("contactExamplesList", "contactExampleTpl");
+      }
+      if (el.closest("[data-add-profile-row]")) {
+        addItem("profileRowsList", "profileRowTpl");
       }
       if (el.closest("[data-remove]")) {
         const row = el.closest(".item-row");
@@ -965,6 +1019,7 @@
         uploadServiceAssets(el, "file");
       }
     });
+
 
     const submitNewsForm = (url, root) => {
       const title = root.querySelector('input[name="title"]')?.value?.trim() || "";

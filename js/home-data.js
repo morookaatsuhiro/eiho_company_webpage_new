@@ -88,7 +88,7 @@
         .join("");
     }
 
-    // Concept / Mission / Vision
+    // Concept / Mission / Vision / Value
     setText("#conceptTitle", data.concept_title);
     setMultilineText("#conceptSubtitle", data.concept_subtitle);
     const conceptPoints = Array.isArray(data.concept_points) ? data.concept_points : [];
@@ -101,6 +101,8 @@
     setMultilineText("#missionBody", data.mission_body);
     setText("#visionTitle", data.vision_title);
     setMultilineText("#visionBody", data.vision_body);
+    setText("#valueTitle", data.value_title);
+    setMultilineText("#valueBody", data.value_body);
 
     // News list (separate API)
     const newsList = document.querySelector("#newsList");
@@ -197,6 +199,45 @@
     const companyEstablished = document.querySelector("#companyEstablished");
     const businessDesc = document.querySelector("#businessDesc");
     const companyClients = document.querySelector("#companyClients");
+    const profileRowsTable = document.querySelector("#profileRowsTable");
+
+    const renderCompanyClients = (el, value) => {
+      if (!el || !value) return;
+      const raw = String(value).trim();
+      if (!raw) return;
+
+      let entries = raw
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      if (entries.length <= 1) {
+        const labelValueLike = raw.match(/[^：:\n]+[：:][^：:\n]*/g) || [];
+        if (labelValueLike.length > 1) {
+          entries = labelValueLike.map((s) => s.trim()).filter(Boolean);
+        } else {
+          entries = raw
+            .split(/[、,;；]/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      }
+
+      const html = entries
+        .map((entry) => {
+          const parts = entry.split(/[：:]/);
+          const label = escapeHtml((parts.shift() || "").trim());
+          const val = escapeHtml(parts.join("：").trim());
+          if (val) {
+            return `<div class="client-row"><span class="client-label">${label}</span><span class="client-sep">：</span><span class="client-value">${val}</span></div>`;
+          }
+          return `<div class="client-row"><span class="client-label">${label}</span></div>`;
+        })
+        .join("");
+
+      el.classList.add("clients-list");
+      el.innerHTML = html || `<div class="client-row"><span class="client-label">${escapeHtml(raw)}</span></div>`;
+    };
 
     if (data.company_name) {
       if (companyNameHead) companyNameHead.textContent = data.company_name;
@@ -205,7 +246,7 @@
     if (data.address && companyAddress) companyAddress.textContent = data.address;
     if (data.representative && companyRepresentative) companyRepresentative.textContent = data.representative;
     if (data.established && companyEstablished) companyEstablished.textContent = data.established;
-    if (data.clients && companyClients) companyClients.textContent = data.clients;
+    if (data.clients && companyClients) renderCompanyClients(companyClients, data.clients);
 
     if (businessDesc && data.business_desc) {
       const lines = String(data.business_desc)
@@ -215,6 +256,34 @@
       businessDesc.innerHTML = lines
         .map(line => `<li>${escapeHtml(line)}</li>`)
         .join("") || `<li>${escapeHtml(data.business_desc)}</li>`;
+    }
+
+    const renderProfileRows = (rows) => {
+      if (!profileRowsTable || !Array.isArray(rows) || rows.length === 0) return;
+      profileRowsTable.innerHTML = rows
+        .map((row) => {
+          const label = escapeHtml(String(row?.label || "").trim());
+          const valueRaw = String(row?.value || "");
+          const value = escapeHtml(valueRaw).replace(/\r?\n/g, "<br>");
+          if (!label && !value) return "";
+          return `<tr><th>${label || "-"}</th><td>${value || "-"}</td></tr>`;
+        })
+        .filter(Boolean)
+        .join("");
+    };
+
+    if (Array.isArray(data.profile_rows) && data.profile_rows.length > 0) {
+      renderProfileRows(data.profile_rows);
+    } else {
+      const fallbackRows = [
+        { label: "名称", value: data.company_name || "" },
+        { label: "所在地", value: data.address || "" },
+        { label: "代表者", value: data.representative || "" },
+        { label: "設立", value: data.established || "" },
+        { label: "事業内容", value: data.business_desc || "" },
+        { label: "主要取引先", value: data.clients || "" }
+      ].filter((row) => String(row.value || "").trim());
+      renderProfileRows(fallbackRows);
     }
 
     // Contact / CTA

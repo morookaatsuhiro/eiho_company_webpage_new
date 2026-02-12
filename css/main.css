@@ -369,6 +369,35 @@ section[id], header[id] { scroll-margin-top: 92px; }
   background: #fbfdff;
 }
 
+.clients-list {
+  display: grid;
+  gap: .45rem;
+}
+
+.client-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem;
+  border: 1px solid rgba(11, 59, 102, .10);
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: .35rem .55rem;
+}
+
+.client-label {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.client-sep {
+  color: var(--muted);
+}
+
+.client-value {
+  color: #374151;
+}
+
 /* CTA */
 .cta {
   border-radius: 28px;

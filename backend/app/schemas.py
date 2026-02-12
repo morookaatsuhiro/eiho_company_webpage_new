@@ -6,6 +6,11 @@ class ServiceFileItem(BaseModel):
     name: str
     url: str
 
+
+class ProfileRowItem(BaseModel):
+    label: str
+    value: str
+
 class ServiceItem(BaseModel):
     title: str
     body: str
@@ -55,6 +60,8 @@ class HomePublic(BaseModel):
     mission_body: str
     vision_title: str
     vision_body: str
+    value_title: str
+    value_body: str
 
     services_section_title: str
     services_section_subtitle: str
@@ -72,6 +79,7 @@ class HomePublic(BaseModel):
     established: str
     business_desc: str
     clients: str
+    profile_rows: List[ProfileRowItem]
 
     cta_title: str
     cta_subtitle: str
@@ -114,6 +122,8 @@ class HomeUpdate(BaseModel):
     mission_body: Optional[str] = None
     vision_title: Optional[str] = None
     vision_body: Optional[str] = None
+    value_title: Optional[str] = None
+    value_body: Optional[str] = None
 
     services_section_title: Optional[str] = None
     services_section_subtitle: Optional[str] = None
@@ -131,6 +141,7 @@ class HomeUpdate(BaseModel):
     established: Optional[str] = None
     business_desc: Optional[str] = None
     clients: Optional[str] = None
+    profile_rows: Optional[List[ProfileRowItem]] = None
 
     cta_title: Optional[str] = None
     cta_subtitle: Optional[str] = None

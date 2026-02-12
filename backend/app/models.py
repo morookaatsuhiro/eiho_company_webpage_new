@@ -34,6 +34,8 @@ class HomePage(Base):
     mission_body = Column(Text, default="")
     vision_title = Column(String(100), default="Vision")
     vision_body = Column(Text, default="")
+    value_title = Column(String(100), default="Value")
+    value_body = Column(Text, default="")
 
     # Section headings
     services_section_title = Column("services_title", String(255), default="事業内容（Our Services）")
@@ -50,6 +52,7 @@ class HomePage(Base):
     # Company profile
     profile_title = Column(String(255), default="会社概要（Company Profile）")
     profile_subtitle = Column(Text, default="")
+    profile_rows_json = Column(Text, default="[]")
     company_name = Column(String(255), default="株式会社 衛宝（EIHO Co., Ltd.）")
     address = Column(String(255), default="〒000-0000 [都道府県・住所を入力]")
     representative = Column(String(255), default="[代表者名を入力]")

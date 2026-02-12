@@ -12,7 +12,15 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
-from .db import Base, engine, get_db, ensure_homepage_nav_columns, ensure_news_asset_columns
+from .db import (
+    Base,
+    engine,
+    get_db,
+    ensure_homepage_nav_columns,
+    ensure_news_asset_columns,
+    ensure_homepage_profile_rows_column,
+    ensure_homepage_value_columns,
+)
 from .crud import get_or_create_home, update_home, list_published_news, get_news
 from .schemas import HomePublic, HomeUpdate, ContactRequest, NewsPublic
 from .admin_views import router as admin_router
@@ -34,6 +42,8 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 Base.metadata.create_all(bind=engine)
 ensure_homepage_nav_columns()
 ensure_news_asset_columns()
+ensure_homepage_profile_rows_column()
+ensure_homepage_value_columns()
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -82,6 +92,27 @@ def public_home(db: Session = Depends(get_db)):
     """公开 API：获取首页数据"""
     try:
         home = get_or_create_home(db)
+        profile_rows_raw = json.loads(home.profile_rows_json or "[]")
+        if isinstance(profile_rows_raw, list):
+            profile_rows = [
+                {
+                    "label": str(row.get("label") or "").strip(),
+                    "value": str(row.get("value") or "").strip(),
+                }
+                for row in profile_rows_raw
+                if isinstance(row, dict) and (str(row.get("label") or "").strip() or str(row.get("value") or "").strip())
+            ]
+        else:
+            profile_rows = []
+        if not profile_rows:
+            profile_rows = [
+                {"label": "名称", "value": home.company_name or ""},
+                {"label": "所在地", "value": home.address or ""},
+                {"label": "代表者", "value": home.representative or ""},
+                {"label": "設立", "value": home.established or ""},
+                {"label": "事業内容", "value": home.business_desc or ""},
+                {"label": "主要取引先", "value": home.clients or ""},
+            ]
         return HomePublic(
             nav_brand_text=home.nav_brand_text or "",
             nav_top_text=home.nav_top_text or "",
@@ -105,6 +136,8 @@ def public_home(db: Session = Depends(get_db)):
             mission_body=home.mission_body or "",
             vision_title=home.vision_title or "",
             vision_body=home.vision_body or "",
+            value_title=home.value_title or "",
+            value_body=home.value_body or "",
             services_section_title=home.services_section_title or "",
             services_section_subtitle=home.services_section_subtitle or "",
             strengths_section_title=home.strengths_section_title or "",
@@ -119,6 +152,7 @@ def public_home(db: Session = Depends(get_db)):
             established=home.established or "",
             business_desc=home.business_desc or "",
             clients=home.clients or "",
+            profile_rows=profile_rows,
             cta_title=home.cta_title or "",
             cta_subtitle=home.cta_subtitle or "",
             cta_button_text=home.cta_button_text or "",

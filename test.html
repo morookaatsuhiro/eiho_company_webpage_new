@@ -129,8 +129,13 @@
             </p>
 
             <h5 id="visionTitle" class="fw-bold text-brand mb-2">Vision</h5>
-            <p id="visionBody" class="mb-0 text-secondary">
+            <p id="visionBody" class="mb-4 text-secondary">
               「品質と情熱」で、日中カーライフの架け橋となるグローバル・パートナーへ。
+            </p>
+
+            <h5 id="valueTitle" class="fw-bold text-brand mb-2">Value</h5>
+            <p id="valueBody" class="mb-0 text-secondary">
+              誠実な取引と透明な品質基準を軸に、長期的な信頼関係を積み重ねます。
             </p>
           </div>
         </div>
@@ -281,7 +286,7 @@
 
         <div class="table-responsive">
           <table class="table table-bordered align-middle">
-            <tbody>
+            <tbody id="profileRowsTable">
               <tr>
                 <th>名称</th>
                 <td id="companyName">株式会社 衛宝（EIHO Co., Ltd.）</td>
@@ -310,7 +315,12 @@
               </tr>
               <tr>
                 <th>主要取引先</th>
-                <td id="companyClients">日本国内のカーショップ、中国国内の製造メーカー、各商社</td>
+                <td>
+                  <div id="companyClients" class="clients-list">
+                    <div class="client-row"><span class="client-label">日本国内のカーショップ</span></div>
+                    <div class="client-row"><span class="client-label">中国国内の製造メーカー</span><span class="client-sep">：</span><span class="client-value">BWM</span></div>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>

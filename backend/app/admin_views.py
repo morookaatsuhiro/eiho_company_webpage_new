@@ -152,6 +152,47 @@ def _parse_contact_examples(examples_json: str) -> list:
     return out
 
 
+def _parse_profile_rows(rows_json: str, home=None) -> list:
+    raw = json.loads(rows_json) if rows_json and rows_json.strip() else []
+    out = []
+    if isinstance(raw, list):
+        for row in raw:
+            if not isinstance(row, dict):
+                continue
+            label = str(row.get("label") or "").strip()
+            value = str(row.get("value") or "").strip()
+            if label or value:
+                out.append({"label": label, "value": value})
+    if out:
+        return out
+
+    if home is None:
+        return []
+    return [
+        {"label": "名称", "value": home.company_name or ""},
+        {"label": "所在地", "value": home.address or ""},
+        {"label": "代表者", "value": home.representative or ""},
+        {"label": "設立", "value": home.established or ""},
+        {"label": "事業内容", "value": home.business_desc or ""},
+        {"label": "主要取引先", "value": home.clients or ""},
+    ]
+
+
+def _pick_profile_row_value(rows: list, labels: list[str]) -> str:
+    """从 profile rows 中按标签提取值（大小写与空格不敏感）。"""
+    normalized_labels = {
+        str(label or "").strip().lower().replace(" ", "") for label in labels if str(label or "").strip()
+    }
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        key = str(row.get("label") or "").strip().lower().replace(" ", "")
+        value = str(row.get("value") or "").strip()
+        if key in normalized_labels and value:
+            return value
+    return ""
+
+
 def _parse_news_images(news) -> list[str]:
     raw = getattr(news, "image_paths_json", "") or "[]"
     try:
@@ -344,6 +385,7 @@ def admin_home(request: Request, db: Session = Depends(get_db)):
             "hero_stats": _parse_hero_stats(home.hero_stats_json or "[]"),
             "concept_points": _parse_concept_points(home.concept_points_json or "[]"),
             "contact_examples": _parse_contact_examples(home.contact_examples_json or "[]"),
+            "profile_rows": _parse_profile_rows(getattr(home, "profile_rows_json", "[]"), home),
             "news_items": raw_news_items,
         })
     except Exception as e:
@@ -387,6 +429,8 @@ def admin_save(
     mission_body: str = Form(""),
     vision_title: str = Form(""),
     vision_body: str = Form(""),
+    value_title: str = Form(""),
+    value_body: str = Form(""),
     services_section_title: str = Form(""),
     services_section_subtitle: str = Form(""),
     strengths_section_title: str = Form(""),
@@ -399,6 +443,8 @@ def admin_save(
     established: str = Form(""),
     business_desc: str = Form(""),
     clients: str = Form(""),
+    profile_row_label: List[str] = Form([]),
+    profile_row_value: List[str] = Form([]),
     cta_title: str = Form(""),
     cta_subtitle: str = Form(""),
     cta_button_text: str = Form(""),
@@ -529,6 +575,17 @@ def admin_save(
     def _build_simple_list(values: List[str]) -> list:
         return [v.strip() for v in values if isinstance(v, str) and v.strip()]
 
+    def _build_profile_rows(labels: List[str], values: List[str]) -> list:
+        rows = []
+        max_len = max(len(labels), len(values), 0)
+        for i in range(max_len):
+            label = labels[i].strip() if i < len(labels) else ""
+            value = values[i].strip() if i < len(values) else ""
+            if not (label or value):
+                continue
+            rows.append({"label": label, "value": value})
+        return rows
+
     def _clean(value: str) -> Optional[str]:
         return value.strip() if value and value.strip() else None
 
@@ -544,6 +601,13 @@ def admin_save(
     hero_stats_list = _build_hero_stats(hero_stat_value, hero_stat_suffix, hero_stat_label)
     concept_points_list = _build_concept_points(concept_point_label, concept_point_body)
     contact_examples_list = _build_simple_list(contact_example_text)
+    profile_rows_list = _build_profile_rows(profile_row_label, profile_row_value)
+    company_name_from_rows = _pick_profile_row_value(profile_rows_list, ["名称", "公司名称", "会社名"])
+    address_from_rows = _pick_profile_row_value(profile_rows_list, ["所在地", "地址", "住所"])
+    representative_from_rows = _pick_profile_row_value(profile_rows_list, ["代表者", "代表", "负责人"])
+    established_from_rows = _pick_profile_row_value(profile_rows_list, ["設立", "成立", "设立"])
+    business_desc_from_rows = _pick_profile_row_value(profile_rows_list, ["事業内容", "业务内容", "事業"])
+    clients_from_rows = _pick_profile_row_value(profile_rows_list, ["主要取引先", "主要客户", "取引先"])
 
     try:
         # 构建更新数据（所有字段都传，空字符串也会写入数据库）
@@ -570,18 +634,21 @@ def admin_save(
             mission_body=_clean(mission_body),
             vision_title=_clean(vision_title),
             vision_body=_clean(vision_body),
+            value_title=_clean(value_title),
+            value_body=_clean(value_body),
             services_section_title=_clean(services_section_title),
             services_section_subtitle=_clean(services_section_subtitle),
             strengths_section_title=_clean(strengths_section_title),
             strengths_section_subtitle=_clean(strengths_section_subtitle),
             profile_title=_clean(profile_title),
             profile_subtitle=_clean(profile_subtitle),
-            company_name=_clean(company_name),
-            address=_clean(address),
-            representative=_clean(representative),
-            established=_clean(established),
-            business_desc=_clean(business_desc),
-            clients=_clean(clients),
+            company_name=_clean(company_name_from_rows or company_name),
+            address=_clean(address_from_rows or address),
+            representative=_clean(representative_from_rows or representative),
+            established=_clean(established_from_rows or established),
+            business_desc=_clean(business_desc_from_rows or business_desc),
+            clients=_clean(clients_from_rows or clients),
+            profile_rows=profile_rows_list,
             cta_title=_clean(cta_title),
             cta_subtitle=_clean(cta_subtitle),
             cta_button_text=_clean(cta_button_text),

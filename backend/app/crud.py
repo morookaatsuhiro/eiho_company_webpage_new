@@ -31,6 +31,8 @@ def get_or_create_home(db: Session) -> HomePage:
             mission_body="高品質な自動車用品の輸出入を通じて、日中市場の価値循環を加速させます。",
             vision_title="Vision",
             vision_body="「品質と情熱」で、日中カーライフの架け橋となるグローバル・パートナーへ。",
+            value_title="Value",
+            value_body="誠実な取引と透明な品質基準を軸に、長期的な信頼関係を積み重ねます。",
             services_section_title="事業内容（Our Services）",
             services_section_subtitle="輸入・輸出・OEM/コンサルまで、日中ビジネスをトータルに支援します。",
             strengths_section_title="当社の強み（Why Choose Us?）",
@@ -130,6 +132,14 @@ def get_or_create_home(db: Session) -> HomePage:
             "OEM：仕様策定、パッケージ、品質基準、検品設計",
             "貿易実務：通関・輸送手配・納期管理・リスク整理",
         ], ensure_ascii=False)
+        home.profile_rows_json = json.dumps([
+            {"label": "名称", "value": home.company_name},
+            {"label": "所在地", "value": home.address},
+            {"label": "代表者", "value": home.representative},
+            {"label": "設立", "value": home.established},
+            {"label": "事業内容", "value": home.business_desc},
+            {"label": "主要取引先", "value": home.clients},
+        ], ensure_ascii=False)
 
         db.add(home)
         db.commit()
@@ -169,6 +179,11 @@ def update_home(db: Session, payload: HomeUpdate) -> HomePage:
                 home.contact_examples_json = json.dumps(v, ensure_ascii=False)
             except Exception as e:
                 raise ValueError(f"Invalid contact examples data: {e}")
+        elif k == "profile_rows" and v is not None:
+            try:
+                home.profile_rows_json = json.dumps(v, ensure_ascii=False)
+            except Exception as e:
+                raise ValueError(f"Invalid profile rows data: {e}")
         else:
             setattr(home, k, v)
 

@@ -129,6 +129,83 @@ def ensure_news_asset_columns() -> None:
             )
 
 
+def ensure_homepage_profile_rows_column() -> None:
+    """为 homepage 表补齐会社概要动态行字段。"""
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    if "homepage" not in table_names:
+        return
+
+    columns = {col["name"] for col in inspector.get_columns("homepage")}
+    if "profile_rows_json" in columns:
+        return
+
+    is_sqlite = DATABASE_URL.startswith("sqlite")
+    is_postgres = DATABASE_URL.startswith("postgresql")
+
+    with engine.begin() as conn:
+        if is_postgres:
+            conn.exec_driver_sql(
+                "ALTER TABLE homepage ADD COLUMN IF NOT EXISTS profile_rows_json TEXT DEFAULT '[]'"
+            )
+            return
+        if is_sqlite:
+            conn.exec_driver_sql(
+                "ALTER TABLE homepage ADD COLUMN profile_rows_json TEXT DEFAULT '[]'"
+            )
+            return
+        conn.exec_driver_sql(
+            "ALTER TABLE homepage ADD COLUMN profile_rows_json TEXT DEFAULT '[]'"
+        )
+
+
+def ensure_homepage_value_columns() -> None:
+    """为 homepage 表补齐 Value 字段。"""
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    if "homepage" not in table_names:
+        return
+
+    columns = {col["name"] for col in inspector.get_columns("homepage")}
+    need_value_title = "value_title" not in columns
+    need_value_body = "value_body" not in columns
+    if not (need_value_title or need_value_body):
+        return
+
+    is_sqlite = DATABASE_URL.startswith("sqlite")
+    is_postgres = DATABASE_URL.startswith("postgresql")
+
+    with engine.begin() as conn:
+        if is_postgres:
+            conn.exec_driver_sql(
+                "ALTER TABLE homepage ADD COLUMN IF NOT EXISTS value_title VARCHAR(100) DEFAULT 'Value'"
+            )
+            conn.exec_driver_sql(
+                "ALTER TABLE homepage ADD COLUMN IF NOT EXISTS value_body TEXT DEFAULT ''"
+            )
+            return
+
+        if is_sqlite:
+            if need_value_title:
+                conn.exec_driver_sql(
+                    "ALTER TABLE homepage ADD COLUMN value_title VARCHAR(100) DEFAULT 'Value'"
+                )
+            if need_value_body:
+                conn.exec_driver_sql(
+                    "ALTER TABLE homepage ADD COLUMN value_body TEXT DEFAULT ''"
+                )
+            return
+
+        if need_value_title:
+            conn.exec_driver_sql(
+                "ALTER TABLE homepage ADD COLUMN value_title VARCHAR(100) DEFAULT 'Value'"
+            )
+        if need_value_body:
+            conn.exec_driver_sql(
+                "ALTER TABLE homepage ADD COLUMN value_body TEXT DEFAULT ''"
+            )
+
+
 def get_db():
     """数据库会话依赖注入"""
     db = SessionLocal()
