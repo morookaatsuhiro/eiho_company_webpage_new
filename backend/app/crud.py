@@ -200,13 +200,21 @@ def create_news(
     body: str,
     image_path: str = "",
     file_path: str = "",
+    image_paths: list[str] | None = None,
+    file_paths: list[dict] | None = None,
     is_published: bool = False,
 ) -> News:
+    image_paths = image_paths or []
+    file_paths = file_paths or []
+    first_image = image_path or (image_paths[0] if image_paths else "")
+    first_file = file_path or (file_paths[0].get("url", "") if file_paths else "")
     item = News(
         title=title.strip(),
         body=body or "",
-        image_path=image_path or "",
-        file_path=file_path or "",
+        image_path=first_image,
+        file_path=first_file,
+        image_paths_json=json.dumps(image_paths, ensure_ascii=False),
+        file_paths_json=json.dumps(file_paths, ensure_ascii=False),
         is_published=is_published,
     )
     db.add(item)
@@ -222,6 +230,8 @@ def update_news(
     body: str,
     image_path: str | None = None,
     file_path: str | None = None,
+    image_paths: list[str] | None = None,
+    file_paths: list[dict] | None = None,
     is_published: bool = False,
 ) -> News | None:
     item = get_news(db, news_id)
@@ -229,9 +239,17 @@ def update_news(
         return None
     item.title = title.strip()
     item.body = body or ""
-    if image_path is not None:
+    if image_paths is not None:
+        item.image_paths_json = json.dumps(image_paths, ensure_ascii=False)
+        item.image_path = image_path if image_path is not None else (image_paths[0] if image_paths else "")
+    elif image_path is not None:
         item.image_path = image_path
-    if file_path is not None:
+
+    if file_paths is not None:
+        item.file_paths_json = json.dumps(file_paths, ensure_ascii=False)
+        default_file = file_paths[0].get("url", "") if file_paths else ""
+        item.file_path = file_path if file_path is not None else default_file
+    elif file_path is not None:
         item.file_path = file_path
     item.is_published = is_published
     db.commit()

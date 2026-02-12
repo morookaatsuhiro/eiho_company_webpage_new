@@ -86,6 +86,8 @@ class News(Base):
     body = Column(Text, default="")
     image_path = Column(String(500), default="")
     file_path = Column(String(500), default="")
+    image_paths_json = Column(Text, default="[]")
+    file_paths_json = Column(Text, default="[]")
     is_published = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

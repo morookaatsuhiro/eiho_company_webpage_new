@@ -150,6 +150,56 @@ def _parse_contact_examples(examples_json: str) -> list:
         if isinstance(item, str) and item.strip():
             out.append(item)
     return out
+
+
+def _parse_news_images(news) -> list[str]:
+    raw = getattr(news, "image_paths_json", "") or "[]"
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        parsed = []
+    images = []
+    if isinstance(parsed, list):
+        for row in parsed:
+            if isinstance(row, dict):
+                value = str(row.get("url") or row.get("src") or "").strip()
+            else:
+                value = str(row).strip()
+            if value:
+                images.append(value)
+    if not images and getattr(news, "image_path", ""):
+        images = [news.image_path]
+    return images
+
+
+def _parse_news_files(news) -> list[dict]:
+    raw = getattr(news, "file_paths_json", "") or "[]"
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        parsed = []
+    files = []
+    if isinstance(parsed, list):
+        for row in parsed:
+            if isinstance(row, dict):
+                url = str(row.get("url") or "").strip()
+                name = str(row.get("name") or "").strip()
+            else:
+                url = str(row).strip()
+                name = Path(urlparse(url).path).name or "文件"
+            if url:
+                files.append({"name": name or "文件", "url": url})
+    if not files and getattr(news, "file_path", ""):
+        url = news.file_path
+        files = [{"name": Path(urlparse(url).path).name or "文件", "url": url}]
+    return files
+
+
+def _store_news_file(upload: UploadFile) -> dict:
+    return {
+        "name": upload.filename or "文件",
+        "url": _store_upload(upload),
+    }
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_BASE = Path(__file__).resolve().parents[2] / "uploads" / "news"
 SERVICE_IMAGES_UPLOAD_BASE = Path(__file__).resolve().parents[2] / "uploads" / "services" / "images"
@@ -282,6 +332,10 @@ def admin_home(request: Request, db: Session = Depends(get_db)):
 
     try:
         home = get_or_create_home(db)
+        raw_news_items = list_news(db)
+        for item in raw_news_items:
+            item.image_paths = _parse_news_images(item)
+            item.file_paths = _parse_news_files(item)
         return templates.TemplateResponse("admin_home.html", {
             "request": request,
             "home": home,
@@ -290,7 +344,7 @@ def admin_home(request: Request, db: Session = Depends(get_db)):
             "hero_stats": _parse_hero_stats(home.hero_stats_json or "[]"),
             "concept_points": _parse_concept_points(home.concept_points_json or "[]"),
             "contact_examples": _parse_contact_examples(home.contact_examples_json or "[]"),
-            "news_items": list_news(db),
+            "news_items": raw_news_items,
         })
     except Exception as e:
         return templates.TemplateResponse(
@@ -560,19 +614,37 @@ def admin_create_news(
     is_published: Optional[str] = Form(None),
     image: UploadFile | None = File(None),
     attachment: UploadFile | None = File(None),
+    images: List[UploadFile] = File([]),
+    attachments: List[UploadFile] = File([]),
 ):
     if not is_logged_in(request):
         return RedirectResponse(url="/admin/login", status_code=302)
     if not title.strip():
         return RedirectResponse(url="/admin?error=news_title_required", status_code=302)
-    image_path = _store_upload(image)
-    file_path = _store_upload(attachment)
+    uploaded_images = []
+    if image and image.filename:
+        uploaded_images.append(_store_upload(image))
+    for img in images:
+        if img and img.filename:
+            uploaded_images.append(_store_upload(img))
+
+    uploaded_files = []
+    if attachment and attachment.filename:
+        uploaded_files.append(_store_news_file(attachment))
+    for file in attachments:
+        if file and file.filename:
+            uploaded_files.append(_store_news_file(file))
+
+    image_path = uploaded_images[0] if uploaded_images else ""
+    file_path = uploaded_files[0]["url"] if uploaded_files else ""
     create_news(
         db,
         title=title,
         body=body,
         image_path=image_path,
         file_path=file_path,
+        image_paths=uploaded_images,
+        file_paths=uploaded_files,
         is_published=bool(is_published),
     )
     return RedirectResponse(url="/admin?news=created", status_code=302)
@@ -588,13 +660,36 @@ def admin_update_news(
     is_published: Optional[str] = Form(None),
     image: UploadFile | None = File(None),
     attachment: UploadFile | None = File(None),
+    images: List[UploadFile] = File([]),
+    attachments: List[UploadFile] = File([]),
 ):
     if not is_logged_in(request):
         return RedirectResponse(url="/admin/login", status_code=302)
     if not title.strip():
         return RedirectResponse(url="/admin?error=news_title_required", status_code=302)
-    image_path = _store_upload(image) if image and image.filename else None
-    file_path = _store_upload(attachment) if attachment and attachment.filename else None
+    existing = list_news(db)
+    target = next((x for x in existing if x.id == news_id), None)
+    existing_images = _parse_news_images(target) if target else []
+    existing_files = _parse_news_files(target) if target else []
+
+    new_images = []
+    if image and image.filename:
+        new_images.append(_store_upload(image))
+    for img in images:
+        if img and img.filename:
+            new_images.append(_store_upload(img))
+
+    new_files = []
+    if attachment and attachment.filename:
+        new_files.append(_store_news_file(attachment))
+    for file in attachments:
+        if file and file.filename:
+            new_files.append(_store_news_file(file))
+
+    merged_images = existing_images + new_images if new_images else existing_images
+    merged_files = existing_files + new_files if new_files else existing_files
+    image_path = merged_images[0] if merged_images else None
+    file_path = merged_files[0]["url"] if merged_files else None
     update_news(
         db,
         news_id=news_id,
@@ -602,6 +697,8 @@ def admin_update_news(
         body=body,
         image_path=image_path,
         file_path=file_path,
+        image_paths=merged_images,
+        file_paths=merged_files,
         is_published=bool(is_published),
     )
     return RedirectResponse(url="/admin?news=updated", status_code=302)

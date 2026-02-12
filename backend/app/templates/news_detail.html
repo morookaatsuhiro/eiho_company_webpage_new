@@ -96,6 +96,13 @@
       border: 1px solid rgba(11, 59, 102, .10);
     }
 
+    .news-detail-gallery {
+      margin-top: .7rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .75rem;
+    }
+
     .news-detail-body {
       margin-top: 1.05rem;
       line-height: 1.9;
@@ -108,6 +115,20 @@
       margin-top: 1.25rem;
       display: flex;
       justify-content: flex-end;
+    }
+    .news-files-block {
+      margin-top: 1.1rem;
+      border: 1px solid rgba(11, 59, 102, .10);
+      border-radius: 14px;
+      background: #f9fbff;
+      padding: .9rem 1rem;
+    }
+    .news-files-title { margin-bottom: .55rem; font-weight: 800; color: #0f5ea6; }
+    .news-files-list { display: grid; gap: .35rem; }
+    .news-file-link { color: #0b3b66; font-weight: 700; text-decoration: none; }
+    .news-file-link:hover { text-decoration: underline; }
+    @media (max-width: 768px) {
+      .news-detail-gallery { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -130,19 +151,32 @@
             <h1 class="news-detail-title">{{ news.title }}</h1>
           </header>
 
-          {% if news.image_path %}
-            <div class="news-detail-media">
-              <img src="{{ news.image_path }}" alt="{{ news.title }}" class="news-detail-image">
-            </div>
+          {% if news_images and news_images|length > 0 %}
+            {% if news_images|length == 1 %}
+              <div class="news-detail-media">
+                <img src="{{ news_images[0] }}" alt="{{ news.title }}" class="news-detail-image">
+              </div>
+            {% else %}
+              <div class="news-detail-gallery">
+                {% for image in news_images %}
+                  <div class="news-detail-media">
+                    <img src="{{ image }}" alt="{{ news.title }} {{ loop.index }}" class="news-detail-image">
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
           {% endif %}
 
           <div class="news-detail-body">{{ news.body }}</div>
 
-          {% if news.file_path %}
-            <div class="news-detail-actions">
-              <a class="btn btn-brand text-white" href="{{ news.file_path }}" target="_blank" rel="noopener noreferrer">
-                <i class="bi bi-paperclip"></i> 添付ファイルを開く
-              </a>
+          {% if news_files and news_files|length > 0 %}
+            <div class="news-files-block">
+              <div class="news-files-title"><i class="bi bi-paperclip"></i> 添付ファイル</div>
+              <div class="news-files-list">
+                {% for file in news_files %}
+                  <a class="news-file-link" href="{{ file.url }}" target="_blank" rel="noopener noreferrer">{{ file.name }}</a>
+                {% endfor %}
+              </div>
             </div>
           {% endif %}
         </article>

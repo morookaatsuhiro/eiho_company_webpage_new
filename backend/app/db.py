@@ -82,6 +82,53 @@ def ensure_homepage_nav_columns() -> None:
             )
 
 
+def ensure_news_asset_columns() -> None:
+    """为 news 表补齐多图/多文件字段。"""
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    if "news" not in table_names:
+        return
+
+    columns = {col["name"] for col in inspector.get_columns("news")}
+    need_image_paths = "image_paths_json" not in columns
+    need_file_paths = "file_paths_json" not in columns
+    if not (need_image_paths or need_file_paths):
+        return
+
+    is_sqlite = DATABASE_URL.startswith("sqlite")
+    is_postgres = DATABASE_URL.startswith("postgresql")
+
+    with engine.begin() as conn:
+        if is_postgres:
+            conn.exec_driver_sql(
+                "ALTER TABLE news ADD COLUMN IF NOT EXISTS image_paths_json TEXT DEFAULT '[]'"
+            )
+            conn.exec_driver_sql(
+                "ALTER TABLE news ADD COLUMN IF NOT EXISTS file_paths_json TEXT DEFAULT '[]'"
+            )
+            return
+
+        if is_sqlite:
+            if need_image_paths:
+                conn.exec_driver_sql(
+                    "ALTER TABLE news ADD COLUMN image_paths_json TEXT DEFAULT '[]'"
+                )
+            if need_file_paths:
+                conn.exec_driver_sql(
+                    "ALTER TABLE news ADD COLUMN file_paths_json TEXT DEFAULT '[]'"
+                )
+            return
+
+        if need_image_paths:
+            conn.exec_driver_sql(
+                "ALTER TABLE news ADD COLUMN image_paths_json TEXT DEFAULT '[]'"
+            )
+        if need_file_paths:
+            conn.exec_driver_sql(
+                "ALTER TABLE news ADD COLUMN file_paths_json TEXT DEFAULT '[]'"
+            )
+
+
 def get_db():
     """数据库会话依赖注入"""
     db = SessionLocal()

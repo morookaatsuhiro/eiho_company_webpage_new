@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
-from .db import Base, engine, get_db, ensure_homepage_nav_columns
+from .db import Base, engine, get_db, ensure_homepage_nav_columns, ensure_news_asset_columns
 from .crud import get_or_create_home, update_home, list_published_news, get_news
 from .schemas import HomePublic, HomeUpdate, ContactRequest, NewsPublic
 from .admin_views import router as admin_router
@@ -33,6 +33,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
 ensure_homepage_nav_columns()
+ensure_news_asset_columns()
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -188,9 +189,44 @@ def news_detail(news_id: int, request: Request, db: Session = Depends(get_db)):
     item = get_news(db, news_id)
     if not item or not item.is_published:
         raise HTTPException(status_code=404, detail="News not found")
+
+    image_list = []
+    try:
+        parsed_images = json.loads(item.image_paths_json or "[]")
+    except Exception:
+        parsed_images = []
+    if isinstance(parsed_images, list):
+        for row in parsed_images:
+            if isinstance(row, dict):
+                url = str(row.get("url") or row.get("src") or "").strip()
+            else:
+                url = str(row).strip()
+            if url:
+                image_list.append(url)
+    if not image_list and item.image_path:
+        image_list = [item.image_path]
+
+    file_list = []
+    try:
+        parsed_files = json.loads(item.file_paths_json or "[]")
+    except Exception:
+        parsed_files = []
+    if isinstance(parsed_files, list):
+        for row in parsed_files:
+            if isinstance(row, dict):
+                url = str(row.get("url") or "").strip()
+                name = str(row.get("name") or "").strip()
+            else:
+                url = str(row).strip()
+                name = "文件"
+            if url:
+                file_list.append({"name": name or "文件", "url": url})
+    if not file_list and item.file_path:
+        file_list = [{"name": "附件", "url": item.file_path}]
+
     return templates.TemplateResponse(
         "news_detail.html",
-        {"request": request, "news": item}
+        {"request": request, "news": item, "news_images": image_list, "news_files": file_list}
     )
 
 

@@ -321,12 +321,12 @@
                 </div>
                 <div class="news-side-panel">
                   <div class="news-upload-card">
-                    <label>图片（可选）</label>
-                    <input type="file" name="image" accept="image/*" title="新闻图片">
+                    <label>图片（可选，多张）</label>
+                    <input type="file" name="images" accept="image/*" multiple title="新闻图片">
                   </div>
                   <div class="news-upload-card">
-                    <label>附件（可选）</label>
-                    <input type="file" name="attachment" title="新闻附件">
+                    <label>附件（可选，多个）</label>
+                    <input type="file" name="attachments" multiple title="新闻附件">
                   </div>
                   <div class="news-upload-card">
                     <label>发布状态</label>
@@ -368,18 +368,24 @@
                       </div>
                       <div class="news-side-fields">
                         <div class="news-upload-card">
-                          <label>图片</label>
-                          {% if n.image_path %}
-                            <div class="hint"><a href="{{ n.image_path }}" target="_blank">当前图片</a></div>
+                          <label>图片（多张）</label>
+                          {% if n.image_paths and n.image_paths|length > 0 %}
+                            <div class="hint">当前图片：</div>
+                            {% for img in n.image_paths %}
+                              <div class="hint"><a href="{{ img }}" target="_blank">图片 {{ loop.index }}</a></div>
+                            {% endfor %}
                           {% endif %}
-                          <input type="file" name="image" accept="image/*" title="新闻图片">
+                          <input type="file" name="images" accept="image/*" multiple title="新闻图片">
                         </div>
                         <div class="news-upload-card">
-                          <label>附件</label>
-                          {% if n.file_path %}
-                            <div class="hint"><a href="{{ n.file_path }}" target="_blank">当前附件</a></div>
+                          <label>附件（多个）</label>
+                          {% if n.file_paths and n.file_paths|length > 0 %}
+                            <div class="hint">当前附件：</div>
+                            {% for f in n.file_paths %}
+                              <div class="hint"><a href="{{ f.url }}" target="_blank">{{ f.name }}</a></div>
+                            {% endfor %}
                           {% endif %}
-                          <input type="file" name="attachment" title="新闻附件">
+                          <input type="file" name="attachments" multiple title="新闻附件">
                         </div>
                         <div class="news-upload-card">
                           <label>发布状态</label>
@@ -970,10 +976,10 @@
       fd.append("title", title);
       const body = root.querySelector('textarea[name="body"]')?.value || "";
       fd.append("body", body);
-      const image = root.querySelector('input[name="image"]')?.files?.[0];
-      const attachment = root.querySelector('input[name="attachment"]')?.files?.[0];
-      if (image) fd.append("image", image);
-      if (attachment) fd.append("attachment", attachment);
+      const images = Array.from(root.querySelector('input[name="images"]')?.files || []);
+      const attachments = Array.from(root.querySelector('input[name="attachments"]')?.files || []);
+      images.forEach((file) => fd.append("images", file));
+      attachments.forEach((file) => fd.append("attachments", file));
       const isPublished = root.querySelector('input[name="is_published"]')?.checked;
       if (isPublished) fd.append("is_published", "on");
       fetch(url, { method: "POST", body: fd })
