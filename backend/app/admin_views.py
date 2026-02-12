@@ -5,7 +5,7 @@ import json
 import shutil
 import uuid
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote_plus
 from typing import List, Type, Optional
 from fastapi import APIRouter, Request, Depends, Form, UploadFile, File
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
@@ -469,6 +469,11 @@ def admin_save(
     strengths_body: List[str] = Form([]),
     strengths_icon: List[str] = Form([]),
 ):
+    accepts_json = (
+        request.headers.get("x-requested-with", "").lower() == "xmlhttprequest"
+        or "application/json" in request.headers.get("accept", "").lower()
+    )
+
     """保存首页数据（需要登录）"""
     if not is_logged_in(request):
         return RedirectResponse(url="/admin/login", status_code=302)
@@ -667,9 +672,17 @@ def admin_save(
             strengths=strengths_list,
         )
         update_home(db, update_data)
+        if accepts_json:
+            return JSONResponse({"ok": True, "message": "保存成功"})
         return RedirectResponse(url="/admin?success=1", status_code=302)
     except Exception as e:
-        return RedirectResponse(url="/admin?error=save_failed", status_code=302)
+        detail = str(e) or "未知错误"
+        if accepts_json:
+            return JSONResponse(
+                status_code=500,
+                content={"ok": False, "message": "保存失败", "detail": detail},
+            )
+        return RedirectResponse(url=f"/admin?error={quote_plus(detail)}", status_code=302)
 
 
 @router.post("/admin/news/create")

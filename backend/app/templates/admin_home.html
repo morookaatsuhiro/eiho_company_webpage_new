@@ -123,7 +123,32 @@
     }
     textarea{min-height:92px;resize:vertical;}
     textarea.textarea-tall{min-height:160px;}
-    .form-actions{display:flex;gap:10px;align-items:center;}
+    .form-actions{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:flex-start;
+      position:sticky;
+      bottom:14px;
+      z-index:3;
+      background:rgba(255,255,255,.9);
+      -webkit-backdrop-filter:blur(6px);
+      backdrop-filter:blur(6px);
+      box-shadow:0 14px 30px rgba(31,42,55,.08);
+    }
+    .save-btn{
+      min-width:94px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+    }
+    .save-btn[disabled]{
+      opacity:.78;
+      cursor:not-allowed;
+      box-shadow:none;
+    }
+    .save-note{color:#5f6d82;font-size:12px;}
     .btn{
       padding:10px 14px;
       border:0;
@@ -197,6 +222,51 @@
     .news-publish-inline{display:flex;align-items:center;gap:6px;font-size:13px;color:#374151;margin-top:6px;}
     .news-publish-inline input[type="checkbox"]{width:auto;margin:0;}
     .news-item .item-actions{border-top:1px solid #eef2f8;padding-top:10px;margin-top:10px;}
+    .toast-stack{
+      position:fixed;
+      right:14px;
+      bottom:14px;
+      z-index:1200;
+      display:grid;
+      gap:8px;
+      width:min(360px, calc(100vw - 28px));
+    }
+    .toast-msg{
+      border-radius:12px;
+      border:1px solid rgba(15,94,166,.2);
+      background:rgba(255,255,255,.94);
+      -webkit-backdrop-filter:blur(8px);
+      backdrop-filter:blur(8px);
+      box-shadow:0 12px 26px rgba(31,42,55,.14);
+      padding:8px 10px;
+      font-size:12px;
+      line-height:1.45;
+      color:#253246;
+      transform:translateY(10px);
+      opacity:0;
+      animation:toast-in .18s ease forwards;
+    }
+    .toast-msg.ok{
+      border-color:rgba(22,163,74,.28);
+      background:rgba(236,253,245,.95);
+    }
+    .toast-msg.err{
+      border-color:rgba(220,38,38,.3);
+      background:rgba(254,242,242,.95);
+    }
+    .toast-title{
+      font-weight:800;
+      margin:0 0 2px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .toast-title i{font-size:12px;}
+    .toast-body{margin:0;color:#405066;word-break:break-word;}
+    @keyframes toast-in{
+      from{transform:translateY(10px);opacity:0;}
+      to{transform:translateY(0);opacity:1;}
+    }
     @media (max-width: 900px){
       body{padding:14px;}
       .top{padding:12px;}
@@ -206,6 +276,7 @@
       .item-fields,.item-fields.compact,.item-fields.simple{grid-template-columns:1fr;}
       .news-create-grid{grid-template-columns:1fr;}
       .news-item-grid{grid-template-columns:1fr;}
+      .form-actions{position:static;}
     }
     @media (prefers-reduced-motion: reduce){
       .bg-wave{animation:none;}
@@ -899,11 +970,14 @@
       </details>
 
       <div class="card form-actions">
-        <button class="btn" type="submit">保存</button>
-        <div class="hint">保存后前端刷新即可看到变化（前端需接入 API 渲染）。</div>
+        <button id="saveHomeBtn" class="btn save-btn" type="submit">
+          <i class="bi bi-check2-circle"></i> 保存
+        </button>
+        <div class="save-note">保存后前端刷新即可看到变化（前端需接入 API 渲染）。</div>
       </div>
     </form>
   </div>
+  <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
 
   <template id="serviceItemTpl">
     <div class="item-row">
@@ -1155,6 +1229,79 @@
       const node = tpl.content.firstElementChild.cloneNode(true);
       list.appendChild(node);
     };
+
+    const toastStack = document.getElementById("toastStack");
+    const showToast = (type, title, message) => {
+      if (!toastStack) return;
+      const toast = document.createElement("div");
+      toast.className = `toast-msg ${type === "ok" ? "ok" : "err"}`;
+      toast.innerHTML = `
+        <div class="toast-title">
+          <i class="bi ${type === "ok" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"}"></i>
+          <span>${title}</span>
+        </div>
+        <p class="toast-body">${message || ""}</p>
+      `;
+      toastStack.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(8px)";
+        setTimeout(() => toast.remove(), 180);
+      }, 5000);
+    };
+
+    const readParamToast = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("success") === "1") {
+        showToast("ok", "保存成功", "已成功保存页面配置。");
+      }
+      const err = params.get("error");
+      if (err) {
+        showToast("err", "保存失败", err);
+      }
+    };
+    readParamToast();
+
+    const saveForm = document.querySelector('form[action="/admin/save"]');
+    const saveBtn = document.getElementById("saveHomeBtn");
+    if (saveForm) {
+      saveForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 保存中...';
+        }
+        try {
+          const res = await fetch("/admin/save", {
+            method: "POST",
+            body: new FormData(saveForm),
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "Accept": "application/json",
+            },
+          });
+          let data = null;
+          try {
+            data = await res.json();
+          } catch (_) {
+            data = null;
+          }
+          if (res.ok && data?.ok) {
+            showToast("ok", "保存成功", data?.message || "配置已保存。");
+          } else {
+            const reason = (data?.detail || data?.message || "未知错误").toString().slice(0, 220);
+            showToast("err", "保存失败", reason);
+          }
+        } catch (err) {
+          showToast("err", "保存失败", (err?.message || "网络异常，请稍后重试").toString().slice(0, 220));
+        } finally {
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> 保存';
+          }
+        }
+      });
+    }
 
     document.addEventListener("click", (e) => {
       const el = e.target instanceof Element ? e.target : null;
