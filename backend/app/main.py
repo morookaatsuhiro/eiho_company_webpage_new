@@ -1,0 +1,213 @@
+"""
+FastAPI 主应用：路由、中间件、静态文件托管
+"""
+import json
+import logging
+from pathlib import Path
+from fastapi import FastAPI, Depends, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+
+from .db import Base, engine, get_db, ensure_homepage_nav_columns
+from .crud import get_or_create_home, update_home, list_published_news, get_news
+from .schemas import HomePublic, HomeUpdate, ContactRequest, NewsPublic
+from .admin_views import router as admin_router
+from .auth import is_logged_in
+from .mail import send_contact_email
+
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+BASE_DIR = Path(__file__).resolve().parents[2]  # 指向 web_page_company 项目根目录
+ENV_PATH = BASE_DIR / "backend" / ".env"
+if ENV_PATH.exists():
+    load_dotenv(dotenv_path=str(ENV_PATH))
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+# 创建数据库表
+Base.metadata.create_all(bind=engine)
+ensure_homepage_nav_columns()
+
+# 创建 FastAPI 应用
+app = FastAPI(
+    title="EIHO Admin Backend",
+    description="株式会社衛宝（EIHO）官网后台管理系统",
+    version="1.0.0"
+)
+
+# CORS 中间件（生产环境建议限制域名）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境建议写死域名，如 ["https://yourdomain.com"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 注册后台管理路由
+app.include_router(admin_router)
+
+# 静态资源挂载（css/js/images），挂载项目根目录
+# 访问 /static/css/main.css 会映射到 web_page_company/css/main.css
+try:
+    app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
+except Exception as e:
+    logger.warning(f"Failed to mount static files: {e}")
+
+
+@app.get("/")
+def serve_frontend():
+    """访问 http://127.0.0.1:8000/ 返回前端主页"""
+    html_path = BASE_DIR / "test.html"
+    if not html_path.exists():
+        raise HTTPException(status_code=404, detail="Frontend file not found")
+    return FileResponse(str(html_path))
+
+
+@app.get("/health")
+def health_check():
+    """健康检查端点"""
+    return {"status": "ok", "service": "EIHO Backend"}
+
+
+@app.get("/api/public/home", response_model=HomePublic)
+def public_home(db: Session = Depends(get_db)):
+    """公开 API：获取首页数据"""
+    try:
+        home = get_or_create_home(db)
+        return HomePublic(
+            nav_brand_text=home.nav_brand_text or "",
+            nav_top_text=home.nav_top_text or "",
+            nav_concept_text=home.nav_concept_text or "メッセージ",
+            nav_news_text=home.nav_news_text or "ニュース",
+            nav_services_text=home.nav_services_text or "",
+            nav_strengths_text=home.nav_strengths_text or "",
+            nav_profile_text=home.nav_profile_text or "",
+            nav_cta_text=home.nav_cta_text or "",
+            hero_kicker=home.hero_kicker or "",
+            hero_title=home.hero_title or "",
+            hero_subtitle=home.hero_subtitle or "",
+            hero_bg_image=home.hero_bg_image or "",
+            hero_primary_cta=home.hero_primary_cta or "",
+            hero_secondary_cta=home.hero_secondary_cta or "",
+            hero_stats=json.loads(home.hero_stats_json or "[]"),
+            concept_title=home.concept_title or "",
+            concept_subtitle=home.concept_subtitle or "",
+            concept_points=json.loads(home.concept_points_json or "[]"),
+            mission_title=home.mission_title or "",
+            mission_body=home.mission_body or "",
+            vision_title=home.vision_title or "",
+            vision_body=home.vision_body or "",
+            services_section_title=home.services_section_title or "",
+            services_section_subtitle=home.services_section_subtitle or "",
+            strengths_section_title=home.strengths_section_title or "",
+            strengths_section_subtitle=home.strengths_section_subtitle or "",
+            services=json.loads(home.services_json or "[]"),
+            strengths=json.loads(home.strengths_json or "[]"),
+            profile_title=home.profile_title or "",
+            profile_subtitle=home.profile_subtitle or "",
+            company_name=home.company_name or "",
+            address=home.address or "",
+            representative=home.representative or "",
+            established=home.established or "",
+            business_desc=home.business_desc or "",
+            clients=home.clients or "",
+            cta_title=home.cta_title or "",
+            cta_subtitle=home.cta_subtitle or "",
+            cta_button_text=home.cta_button_text or "",
+            cta_phone_text=home.cta_phone_text or "",
+            contact_form_title=home.contact_form_title or "",
+            contact_form_note=home.contact_form_note or "",
+            contact_examples_title=home.contact_examples_title or "",
+            contact_examples=json.loads(home.contact_examples_json or "[]"),
+            access_title=home.access_title or "",
+            access_address=home.access_address or "",
+            footer_copyright=home.footer_copyright or "",
+            footer_link_top=home.footer_link_top or "",
+            footer_link_services=home.footer_link_services or "",
+            footer_link_profile=home.footer_link_profile or "",
+        )
+    except Exception as e:
+        logger.error(f"Error fetching home data: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch home data")
+
+
+@app.get("/api/public/news", response_model=list[NewsPublic])
+def public_news(db: Session = Depends(get_db)):
+    """公开 API：获取已发布新闻列表（仅标题与链接）"""
+    items = list_published_news(db)
+    return [
+        NewsPublic(id=item.id, title=item.title, url=f"/news/{item.id}")
+        for item in items
+    ]
+
+
+@app.put("/api/admin/home")
+def admin_update_home(payload: HomeUpdate, request: Request, db: Session = Depends(get_db)):
+    """后台 API：更新首页数据（需要登录）"""
+    if not is_logged_in(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        home = update_home(db, payload)
+        return {"ok": True, "updated_at": str(home.updated_at)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating home data: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to update home data")
+
+
+@app.post("/api/contact")
+def submit_contact(payload: ContactRequest):
+    """联系表单：发送邮件给管理员"""
+    try:
+        send_contact_email(
+            name=payload.name,
+            company=payload.company,
+            email=payload.email,
+            message=payload.message,
+        )
+        return {"ok": True}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to send contact email: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to send email")
+
+
+@app.get("/news/{news_id}", response_class=HTMLResponse)
+def news_detail(news_id: int, request: Request, db: Session = Depends(get_db)):
+    """新闻详情页"""
+    item = get_news(db, news_id)
+    if not item or not item.is_published:
+        raise HTTPException(status_code=404, detail="News not found")
+    return templates.TemplateResponse(
+        "news_detail.html",
+        {"request": request, "news": item}
+    )
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    """404 错误处理"""
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "Not found"}
+    )
+
+
+@app.exception_handler(500)
+async def internal_error_handler(request: Request, exc: HTTPException):
+    """500 错误处理"""
+    logger.error(f"Internal server error: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )

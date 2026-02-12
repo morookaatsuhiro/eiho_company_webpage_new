@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EIHO Admin</title>
+  <style>
+    body{font-family:system-ui;background:linear-gradient(180deg,#f6f7fb 0%,#eef2f7 100%);margin:0;padding:24px;color:#1f2a37;}
+    .top{display:flex;justify-content:space-between;align-items:center;max-width:1200px;margin:0 auto 12px;}
+    .wrap{max-width:1200px;margin:0 auto;}
+    .card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.08);border:1px solid #eef0f4;}
+    .card-title{margin:0 0 8px;font-size:18px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .full{grid-column:1/-1;}
+    .section{border:1px solid #eef0f4;border-radius:16px;margin-bottom:16px;background:#fff;}
+    .section summary{cursor:pointer;font-weight:800;font-size:16px;padding:14px 16px;list-style:none;background:#f7f9fc;border-bottom:1px solid #eef0f4;}
+    .section summary::-webkit-details-marker{display:none;}
+    .section-body{padding:0 16px 16px;}
+    .section-title{display:flex;align-items:center;justify-content:space-between;margin:0;}
+    label{font-weight:700;color:#333;font-size:13px;}
+    input,textarea{width:100%;padding:10px 12px;border:1px solid #d6dbe6;border-radius:12px;margin-top:6px;background:#fff;box-sizing:border-box;}
+    input:focus,textarea:focus{outline:none;border-color:#0f5ea6;box-shadow:0 0 0 3px rgba(15,94,166,.12);}
+    textarea{min-height:92px;resize:vertical;}
+    textarea.textarea-tall{min-height:160px;}
+    .form-actions{display:flex;gap:10px;align-items:center;}
+    .btn{padding:10px 14px;border:0;border-radius:12px;background:#0f5ea6;color:#fff;font-weight:800;cursor:pointer;transition:transform .06s ease,box-shadow .2s ease;}
+    .btn:hover{box-shadow:0 6px 18px rgba(15,94,166,.18);}
+    .btn:active{transform:translateY(1px);}
+    .btn-outline{background:#fff;color:#0f5ea6;border:1px solid #0f5ea6;}
+    .btn-danger{background:#fff;color:#c62828;border:1px solid #c62828;}
+    .hint{color:#666;font-size:12px;margin-top:4px;}
+    a{color:#0f5ea6;text-decoration:none;font-weight:700;}
+    .item-row{border:1px solid #eef0f4;border-radius:12px;padding:12px;margin-top:10px;background:#fafbff;}
+    .item-fields{display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px;}
+    .item-fields.compact{grid-template-columns:1fr 1fr 2fr;}
+    .item-fields.simple{grid-template-columns:1fr 2fr;}
+    .item-fields.one{grid-template-columns:1fr;}
+    .item-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
+    .item-actions .btn{padding:6px 10px;font-weight:700;}
+    .news-wrap{margin-top:18px;}
+    .news-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:#6b7280;}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3f51b5;font-weight:700;font-size:11px;}
+    .news-panel{border:1px solid #dce6f6;border-radius:14px;background:#f8fbff;padding:12px;margin-top:10px;}
+    .news-panel-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+    .news-panel-title h4{margin:0;font-size:17px;}
+    .news-create{background:#fff;border:1px solid #dfe7f3;}
+    .news-create-title{margin:0 0 4px;font-size:18px;color:#1f2a37;}
+    .news-create-subtitle{margin:0 0 12px;color:#667085;font-size:13px;}
+    .news-create-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;}
+    .news-main-fields{display:grid;grid-template-columns:1fr;gap:12px;}
+    .news-side-panel{display:grid;grid-template-columns:1fr;gap:10px;align-content:start;}
+    .news-upload-card{
+      border:1px solid #dbe5f3;
+      border-radius:10px;
+      background:#f9fbff;
+      padding:10px;
+    }
+    .news-upload-card label{display:block;margin-bottom:4px;}
+    .news-publish-check{display:flex;align-items:center;gap:6px;font-size:13px;color:#374151;margin-top:6px;}
+    .news-publish-check input[type="checkbox"]{width:auto;margin:0;}
+    .news-create .item-actions{margin-top:12px;justify-content:flex-start;}
+    .news-list-wrap{display:grid;gap:10px;}
+    .news-item{background:#fff;border:1px solid #dfe7f3;}
+    .news-item-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:8px;}
+    .news-side-fields{display:grid;gap:10px;align-content:start;}
+    .news-publish-inline{display:flex;align-items:center;gap:6px;font-size:13px;color:#374151;margin-top:6px;}
+    .news-publish-inline input[type="checkbox"]{width:auto;margin:0;}
+    .news-item .item-actions{border-top:1px solid #eef2f8;padding-top:10px;margin-top:10px;}
+    @media (max-width: 900px){
+      .news-create-grid{grid-template-columns:1fr;}
+      .news-item-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h2>主页内容管理</h2>
+    <div>
+      <a href="/api/public/home" target="_blank">查看 public JSON</a>
+      &nbsp;|&nbsp;
+      <a href="/admin/logout">退出</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <form method="post" action="/admin/save">
+      <details class="section" open>
+        <summary><span class="section-title">导航栏</span></summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="full">
+              <label for="nav_brand_text">品牌文字</label>
+              <input id="nav_brand_text" name="nav_brand_text" value="{{ home.nav_brand_text or '' }}" placeholder="EIHO / 衛宝">
+            </div>
+            <div>
+              <label for="nav_top_text">顶部</label>
+              <input id="nav_top_text" name="nav_top_text" value="{{ home.nav_top_text or '' }}" placeholder="トップ">
+            </div>
+            <div>
+              <label for="nav_concept_text">メッセージ</label>
+              <input id="nav_concept_text" name="nav_concept_text" value="{{ home.nav_concept_text or '' }}" placeholder="メッセージ">
+            </div>
+            <div>
+              <label for="nav_news_text">ニュース</label>
+              <input id="nav_news_text" name="nav_news_text" value="{{ home.nav_news_text or '' }}" placeholder="ニュース">
+            </div>
+            <div>
+              <label for="nav_services_text">事業内容</label>
+              <input id="nav_services_text" name="nav_services_text" value="{{ home.nav_services_text or '' }}" placeholder="事業内容">
+            </div>
+            <div>
+              <label for="nav_strengths_text">強み</label>
+              <input id="nav_strengths_text" name="nav_strengths_text" value="{{ home.nav_strengths_text or '' }}" placeholder="強み">
+            </div>
+            <div>
+              <label for="nav_profile_text">会社概要</label>
+              <input id="nav_profile_text" name="nav_profile_text" value="{{ home.nav_profile_text or '' }}" placeholder="会社概要">
+            </div>
+            <div>
+              <label for="nav_cta_text">CTA</label>
+              <input id="nav_cta_text" name="nav_cta_text" value="{{ home.nav_cta_text or '' }}" placeholder="お問合わせ">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" open>
+        <summary><span class="section-title">Hero / 顶部</span></summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="full">
+              <label for="hero_kicker">Hero 角标</label>
+              <input id="hero_kicker" name="hero_kicker" value="{{ home.hero_kicker or '' }}" placeholder="Japan × China | Automotive Trading">
+            </div>
+            <div class="full">
+              <label for="hero_title">Hero 标题</label>
+              <input id="hero_title" name="hero_title" value="{{ home.hero_title or '' }}" placeholder="例：品質と情熱で、日中のカーライフを繋ぐ架け橋へ">
+            </div>
+            <div class="full">
+              <label for="hero_subtitle">Hero 副文案</label>
+              <textarea id="hero_subtitle" name="hero_subtitle" placeholder="例：株式会社衛宝は…">{{ home.hero_subtitle or '' }}</textarea>
+            </div>
+            <div>
+              <label for="hero_primary_cta">主按钮文案</label>
+              <input id="hero_primary_cta" name="hero_primary_cta" value="{{ home.hero_primary_cta or '' }}" placeholder="事業内容を見る">
+            </div>
+            <div>
+              <label for="hero_secondary_cta">副按钮文案</label>
+              <input id="hero_secondary_cta" name="hero_secondary_cta" value="{{ home.hero_secondary_cta or '' }}" placeholder="会社概要">
+            </div>
+            <div class="full">
+              <label for="hero_bg_image">Hero 背景图（URL 或路径）</label>
+              <input id="hero_bg_image" name="hero_bg_image" value="{{ home.hero_bg_image or '' }}" placeholder="https://…">
+              <div class="hint">建议用 URL。后续要支持上传图片也可以加接口。</div>
+            </div>
+          </div>
+          <div class="full">
+            <h4>Hero 统计卡片（可多条）</h4>
+            <div class="hint">每条包含「数字」「后缀」「说明」</div>
+            <div id="heroStatsList">
+              {% if hero_stats and hero_stats|length > 0 %}
+                {% for s in hero_stats %}
+                  <div class="item-row">
+                    <div class="item-fields compact">
+                      <div>
+                        <label>数字</label>
+                        <input name="hero_stat_value" value="{{ s.value }}" placeholder="2">
+                      </div>
+                      <div>
+                        <label>后缀</label>
+                        <input name="hero_stat_suffix" value="{{ s.suffix }}" placeholder="国間">
+                      </div>
+                      <div>
+                        <label>说明</label>
+                        <input name="hero_stat_label" value="{{ s.label }}" placeholder="日中の調達・販売を一気通貫">
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <button type="button" class="btn btn-danger" data-remove>删除</button>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="item-row">
+                  <div class="item-fields compact">
+                    <div>
+                      <label>数字</label>
+                      <input name="hero_stat_value" value="" placeholder="2">
+                    </div>
+                    <div>
+                      <label>后缀</label>
+                      <input name="hero_stat_suffix" value="" placeholder="国間">
+                    </div>
+                    <div>
+                      <label>说明</label>
+                      <input name="hero_stat_label" value="" placeholder="日中の調達・販売を一気通貫">
+                    </div>
+                  </div>
+                  <div class="item-actions">
+                    <button type="button" class="btn btn-danger" data-remove>删除</button>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+            <div class="item-actions">
+              <button type="button" class="btn btn-outline" data-add-hero-stat>+ 添加统计卡片</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span class="section-title">概念 / 使命愿景</span></summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="full">
+              <label for="concept_title">区块标题</label>
+              <input id="concept_title" name="concept_title" value="{{ home.concept_title or '' }}" placeholder="メッセージ（コンセプト）">
+            </div>
+            <div class="full">
+              <label for="concept_subtitle">区块描述</label>
+              <textarea id="concept_subtitle" name="concept_subtitle">{{ home.concept_subtitle or '' }}</textarea>
+            </div>
+          </div>
+          <div class="full">
+            <h4>三条要点</h4>
+            <div class="hint">每条包含「标题」「说明」</div>
+            <div id="conceptPointsList">
+              {% if concept_points and concept_points|length > 0 %}
+                {% for p in concept_points %}
+                  <div class="item-row">
+                    <div class="item-fields simple">
+                      <div>
+                        <label>标题</label>
+                        <input name="concept_point_label" value="{{ p.label }}" placeholder="安心">
+                      </div>
+                      <div>
+                        <label>说明</label>
+                        <textarea name="concept_point_body" placeholder="検品・規格・品質の可視化">{{ p.body }}</textarea>
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <button type="button" class="btn btn-danger" data-remove>删除</button>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="item-row">
+                  <div class="item-fields simple">
+                    <div>
+                      <label>标题</label>
+                      <input name="concept_point_label" value="" placeholder="安心">
+                    </div>
+                    <div>
+                      <label>说明</label>
+                      <textarea name="concept_point_body" placeholder="検品・規格・品質の可視化"></textarea>
+                    </div>
+                  </div>
+                  <div class="item-actions">
+                    <button type="button" class="btn btn-danger" data-remove>删除</button>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+            <div class="item-actions">
+              <button type="button" class="btn btn-outline" data-add-concept-point>+ 添加要点</button>
+            </div>
+          </div>
+          <div class="grid">
+            <div>
+              <label for="mission_title">Mission 标题</label>
+              <input id="mission_title" name="mission_title" value="{{ home.mission_title or '' }}" placeholder="Mission">
+            </div>
+            <div>
+              <label for="vision_title">Vision 标题</label>
+              <input id="vision_title" name="vision_title" value="{{ home.vision_title or '' }}" placeholder="Vision">
+            </div>
+            <div>
+              <label for="mission_body">Mission 内容</label>
+              <textarea id="mission_body" name="mission_body">{{ home.mission_body or '' }}</textarea>
+            </div>
+            <div>
+              <label for="vision_body">Vision 内容</label>
+              <textarea id="vision_body" name="vision_body">{{ home.vision_body or '' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" open>
+        <summary><span class="section-title">ニュース管理</span></summary>
+        <div class="section-body">
+          <div class="hint">主页只显示已发布新闻标题，点击进入详情页。</div>
+          <div class="news-panel">
+            <div class="news-panel-title">
+              <h4>新建ニュース</h4>
+              <span class="hint">填写完成后点击创建</span>
+            </div>
+            <div class="item-row news-create">
+              <p class="news-create-subtitle">先完成标题和正文，再设置图片、附件和发布状态。</p>
+              <div class="news-create-grid">
+                <div class="news-main-fields">
+                  <div>
+                    <label>标题</label>
+                    <input name="title" placeholder="例：展示会出展のお知らせ" title="新闻标题">
+                  </div>
+                  <div>
+                    <label>正文</label>
+                    <textarea name="body" class="textarea-tall" placeholder="这里输入正文内容" title="新闻正文"></textarea>
+                    <div class="hint">建议首段概述核心信息，后续分段补充时间、地点、对象与联系方式。</div>
+                  </div>
+                </div>
+                <div class="news-side-panel">
+                  <div class="news-upload-card">
+                    <label>图片（可选）</label>
+                    <input type="file" name="image" accept="image/*" title="新闻图片">
+                  </div>
+                  <div class="news-upload-card">
+                    <label>附件（可选）</label>
+                    <input type="file" name="attachment" title="新闻附件">
+                  </div>
+                  <div class="news-upload-card">
+                    <label>发布状态</label>
+                    <label class="news-publish-check"><input type="checkbox" name="is_published" title="发布状态"> 立即发布</label>
+                    <div class="hint">未勾选将保存为草稿，可在下方列表中再编辑并发布。</div>
+                  </div>
+                </div>
+              </div>
+              <div class="item-actions">
+                <button class="btn" type="button" data-news-create>创建</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="news-panel">
+            <div class="news-panel-title">
+              <h4>已创建ニュース</h4>
+              <span class="hint">支持修改后保存或删除</span>
+            </div>
+            {% if news_items and news_items|length > 0 %}
+              <div class="news-list-wrap">
+                {% for n in news_items %}
+                  <div class="item-row news-item" data-news-id="{{ n.id }}">
+                    <div class="news-meta">
+                      <span class="badge">ID {{ n.id }}</span>
+                      {% if n.is_published %}<span class="badge">公開中</span>{% else %}<span class="badge">非公開</span>{% endif %}
+                      <span>详情页：<a href="/news/{{ n.id }}" target="_blank">/news/{{ n.id }}</a></span>
+                    </div>
+                    <div class="news-item-grid">
+                      <div class="item-fields one">
+                        <div>
+                          <label>标题</label>
+                          <input name="title" value="{{ n.title }}" title="新闻标题">
+                        </div>
+                        <div>
+                          <label>正文</label>
+                          <textarea name="body" class="textarea-tall" title="新闻正文">{{ n.body or '' }}</textarea>
+                        </div>
+                      </div>
+                      <div class="news-side-fields">
+                        <div class="news-upload-card">
+                          <label>图片</label>
+                          {% if n.image_path %}
+                            <div class="hint"><a href="{{ n.image_path }}" target="_blank">当前图片</a></div>
+                          {% endif %}
+                          <input type="file" name="image" accept="image/*" title="新闻图片">
+                        </div>
+                        <div class="news-upload-card">
+                          <label>附件</label>
+                          {% if n.file_path %}
+                            <div class="hint"><a href="{{ n.file_path }}" target="_blank">当前附件</a></div>
+                          {% endif %}
+                          <input type="file" name="attachment" title="新闻附件">
+                        </div>
+                        <div class="news-upload-card">
+                          <label>发布状态</label>
+                          <label class="news-publish-inline">
+                            <input type="checkbox" name="is_published" title="发布状态" {% if n.is_published %}checked{% endif %}> 已发布
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <button class="btn btn-outline" type="button" data-news-update>保存</button>
+                      <button class="btn btn-danger" type="button" data-news-delete>删除</button>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="hint">暂无新闻</div>
+            {% endif %}
+          </div>
+        </div>
+      </details>
+
+      <details class="section" open>
+        <summary><span class="section-title">Services</span></summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="full">
+              <label for="services_section_title">区块标题</label>
+              <input id="services_section_title" name="services_section_title" value="{{ home.services_section_title or '' }}" placeholder="事業内容（Our Services）">
+            </div>
+            <div class="full">
+              <label for="services_section_subtitle">区块描述</label>
+              <textarea id="services_section_subtitle" name="services_section_subtitle">{{ home.services_section_subtitle or '' }}</textarea>
+            </div>
+          </div>
+          <div class="full">
+            <div class="hint">可新增/删除多条服务，每条包含「标题」「内容」「图标（可选）」</div>
+            <div id="servicesList">
+              {% if services and services|length > 0 %}
+                {% for s in services %}
+                  <div class="item-row">
+                    <div class="item-fields">
+                      <div>
+                        <label>标题</label>
+                        <input name="services_title" value="{{ s.title }}" placeholder="例如：輸入事業（Import）">
+                      </div>
+                      <div>
+                        <label>内容</label>
+                        <textarea name="services_body" placeholder="服务内容">{{ s.body }}</textarea>
+                      </div>
+                      <div>
+                        <label>图标（可选）</label>
+                        <input name="services_icon" value="{{ s.icon or '' }}" placeholder="box-seam">
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <button type="button" class="btn btn-danger" data-remove>删除</button>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="item-row">
+                  <div class="item-fields">
+                    <div>
+                      <label>标题</label>
+                      <input name="services_title" value="" placeholder="例如：輸入事業（Import）">
+                    </div>
+                    <div>
+                      <label>内容</label>
+                      <textarea name="services_body" placeholder="服务内容"></textarea>
+                    </div>
+                    <div>
+                      <label>图标（可选）</label>
+                      <input name="services_icon" value="" placeholder="box-seam">
+                    </div>
+                  </div>
+                  <div class="item-actions">
+                    <button type="button" class="btn btn-danger" data-remove>删除</button>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+            <div class="item-actions">
+              <button type="button" class="btn btn-outline" data-add-service>+ 添加服务</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" open>
+        <summary><span class="section-title">Strengths</span></summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="full">
+              <label for="strengths_section_title">区块标题</label>
+              <input id="strengths_section_title" name="strengths_section_title" value="{{ home.strengths_section_title or '' }}" placeholder="当社の強み（Why Choose Us?）">
+            </div>
+            <div class="full">
+              <label for="strengths_section_subtitle">区块描述</label>
+              <textarea id="strengths_section_subtitle" name="strengths_section_subtitle">{{ home.strengths_section_subtitle or '' }}</textarea>
+            </div>
+          </div>
+          <div class="full">
+            <div class="hint">可新增/删除多条强项，每条包含「标题」「内容」「图标（可选）」</div>
+            <div id="strengthsList">
+              {% if strengths and strengths|length > 0 %}
+                {% for s in strengths %}
+                  <div class="item-row">
+                    <div class="item-fields">
+                      <div>
+                        <label>标题</label>
+                        <input name="strengths_title" value="{{ s.title }}" placeholder="例如：独自のネットワーク">
+                      </div>
+                      <div>
+                        <label>内容</label>
+                        <textarea name="strengths_body" placeholder="强项内容">{{ s.body }}</textarea>
+                      </div>
+                      <div>
+                        <label>图标（可选）</label>
+                        <input name="strengths_icon" value="{{ s.icon or '' }}" placeholder="diagram-3-fill">
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <button type="button" class="btn btn-danger" data-remove>删除</button>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="item-row">
+                  <div class="item-fields">
+                    <div>
+                      <label>标题</label>
+                      <input name="strengths_title" value="" placeholder="例如：独自のネットワーク">
+                    </div>
+                    <div>
+                      <label>内容</label>
+                      <textarea name="strengths_body" placeholder="强项内容"></textarea>
+                    </div>
+                    <div>
+                      <label>图标（可选）</label>
+                      <input name="strengths_icon" value="" placeholder="diagram-3-fill">
+                    </div>
+                  </div>
+                  <div class="item-actions">
+                    <button type="button" class="btn btn-danger" data-remove>删除</button>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+            <div class="item-actions">
+              <button type="button" class="btn btn-outline" data-add-strength>+ 添加强项</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" open>
+        <summary><span class="section-title">公司概要</span></summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="full">
+              <label for="profile_title">区块标题</label>
+              <input id="profile_title" name="profile_title" value="{{ home.profile_title or '' }}" placeholder="会社概要（Company Profile）">
+            </div>
+            <div class="full">
+              <label for="profile_subtitle">区块描述</label>
+              <textarea id="profile_subtitle" name="profile_subtitle">{{ home.profile_subtitle or '' }}</textarea>
+            </div>
+            <div>
+              <label for="company_name">公司名称</label>
+              <input id="company_name" name="company_name" value="{{ home.company_name or '' }}" placeholder="株式会社 衛宝">
+            </div>
+            <div>
+              <label for="established">设立</label>
+              <input id="established" name="established" value="{{ home.established or '' }}" placeholder="2020年1月">
+            </div>
+            <div class="full">
+              <label for="address">地址</label>
+              <input id="address" name="address" value="{{ home.address or '' }}" placeholder="〒000-0000 東京都…">
+            </div>
+            <div>
+              <label for="representative">代表者</label>
+              <input id="representative" name="representative" value="{{ home.representative or '' }}" placeholder="代表者名">
+            </div>
+            <div class="full">
+              <label for="business_desc">事業内容（可分行）</label>
+              <textarea id="business_desc" name="business_desc" placeholder="事業内容の説明">{{ home.business_desc or '' }}</textarea>
+              <div class="hint">每行一条，将在前端转换成列表。</div>
+            </div>
+            <div class="full">
+              <label for="clients">主要取引先</label>
+              <textarea id="clients" name="clients" placeholder="取引先一覧">{{ home.clients or '' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span class="section-title">Contact / CTA</span></summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="full">
+              <label for="cta_title">CTA 标题</label>
+              <input id="cta_title" name="cta_title" value="{{ home.cta_title or '' }}">
+            </div>
+            <div class="full">
+              <label for="cta_subtitle">CTA 副标题</label>
+              <textarea id="cta_subtitle" name="cta_subtitle">{{ home.cta_subtitle or '' }}</textarea>
+            </div>
+            <div>
+              <label for="cta_button_text">CTA 按钮文案</label>
+              <input id="cta_button_text" name="cta_button_text" value="{{ home.cta_button_text or '' }}">
+            </div>
+            <div>
+              <label for="cta_phone_text">电话说明</label>
+              <input id="cta_phone_text" name="cta_phone_text" value="{{ home.cta_phone_text or '' }}">
+            </div>
+            <div>
+              <label for="contact_form_title">表单标题</label>
+              <input id="contact_form_title" name="contact_form_title" value="{{ home.contact_form_title or '' }}">
+            </div>
+            <div>
+              <label for="contact_examples_title">咨询示例标题</label>
+              <input id="contact_examples_title" name="contact_examples_title" value="{{ home.contact_examples_title or '' }}">
+            </div>
+            <div class="full">
+              <label for="contact_form_note">说明文字</label>
+              <textarea id="contact_form_note" name="contact_form_note">{{ home.contact_form_note or '' }}</textarea>
+            </div>
+            <div class="full">
+              <h4>咨询示例列表</h4>
+              <div id="contactExamplesList">
+                {% if contact_examples and contact_examples|length > 0 %}
+                  {% for item in contact_examples %}
+                    <div class="item-row">
+                      <div class="item-fields one">
+                        <div>
+                          <label>示例</label>
+                          <input name="contact_example_text" value="{{ item }}" placeholder="日本向け：カーアクセサリー...">
+                        </div>
+                      </div>
+                      <div class="item-actions">
+                        <button type="button" class="btn btn-danger" data-remove>删除</button>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="item-row">
+                    <div class="item-fields one">
+                      <div>
+                        <label>示例</label>
+                        <input name="contact_example_text" value="" placeholder="日本向け：カーアクセサリー...">
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <button type="button" class="btn btn-danger" data-remove>删除</button>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="item-actions">
+                <button type="button" class="btn btn-outline" data-add-contact-example>+ 添加示例</button>
+              </div>
+            </div>
+            <div>
+              <label for="access_title">アクセス标题</label>
+              <input id="access_title" name="access_title" value="{{ home.access_title or '' }}">
+            </div>
+            <div>
+              <label for="access_address">アクセス地址</label>
+              <input id="access_address" name="access_address" value="{{ home.access_address or '' }}">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span class="section-title">Footer</span></summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="full">
+              <label for="footer_copyright">版权文案</label>
+              <input id="footer_copyright" name="footer_copyright" value="{{ home.footer_copyright or '' }}">
+            </div>
+            <div>
+              <label for="footer_link_top">底部链接：TOP</label>
+              <input id="footer_link_top" name="footer_link_top" value="{{ home.footer_link_top or '' }}">
+            </div>
+            <div>
+              <label for="footer_link_services">底部链接：Services</label>
+              <input id="footer_link_services" name="footer_link_services" value="{{ home.footer_link_services or '' }}">
+            </div>
+            <div>
+              <label for="footer_link_profile">底部链接：Profile</label>
+              <input id="footer_link_profile" name="footer_link_profile" value="{{ home.footer_link_profile or '' }}">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="card form-actions">
+        <button class="btn" type="submit">保存</button>
+        <div class="hint">保存后前端刷新即可看到变化（前端需接入 API 渲染）。</div>
+      </div>
+    </form>
+  </div>
+
+  <template id="serviceItemTpl">
+    <div class="item-row">
+      <div class="item-fields">
+        <div>
+          <label>标题</label>
+          <input name="services_title" value="" placeholder="例如：輸入事業（Import）" title="服务标题">
+        </div>
+        <div>
+          <label>内容</label>
+          <textarea name="services_body" placeholder="服务内容" title="服务内容"></textarea>
+        </div>
+        <div>
+          <label>图标（可选）</label>
+          <input name="services_icon" value="" placeholder="box-seam" title="Bootstrap Icons 名称">
+        </div>
+      </div>
+      <div class="item-actions">
+        <button type="button" class="btn btn-danger" data-remove>删除</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="strengthItemTpl">
+    <div class="item-row">
+      <div class="item-fields">
+        <div>
+          <label>标题</label>
+          <input name="strengths_title" value="" placeholder="例如：独自のネットワーク" title="强项标题">
+        </div>
+        <div>
+          <label>内容</label>
+          <textarea name="strengths_body" placeholder="强项内容" title="强项内容"></textarea>
+        </div>
+        <div>
+          <label>图标（可选）</label>
+          <input name="strengths_icon" value="" placeholder="diagram-3-fill" title="Bootstrap Icons 名称">
+        </div>
+      </div>
+      <div class="item-actions">
+        <button type="button" class="btn btn-danger" data-remove>删除</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="heroStatItemTpl">
+    <div class="item-row">
+      <div class="item-fields compact">
+        <div>
+          <label>数字</label>
+          <input name="hero_stat_value" value="" placeholder="2">
+        </div>
+        <div>
+          <label>后缀</label>
+          <input name="hero_stat_suffix" value="" placeholder="国間">
+        </div>
+        <div>
+          <label>说明</label>
+          <input name="hero_stat_label" value="" placeholder="日中の調達・販売を一気通貫">
+        </div>
+      </div>
+      <div class="item-actions">
+        <button type="button" class="btn btn-danger" data-remove>删除</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="conceptPointTpl">
+    <div class="item-row">
+      <div class="item-fields simple">
+        <div>
+          <label>标题</label>
+          <input name="concept_point_label" value="" placeholder="安心">
+        </div>
+        <div>
+          <label>说明</label>
+          <textarea name="concept_point_body" placeholder="検品・規格・品質の可視化"></textarea>
+        </div>
+      </div>
+      <div class="item-actions">
+        <button type="button" class="btn btn-danger" data-remove>删除</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="contactExampleTpl">
+    <div class="item-row">
+      <div class="item-fields one">
+        <div>
+          <label>示例</label>
+          <input name="contact_example_text" value="" placeholder="日本向け：カーアクセサリー...">
+        </div>
+      </div>
+      <div class="item-actions">
+        <button type="button" class="btn btn-danger" data-remove>删除</button>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const addItem = (listId, tplId) => {
+      const list = document.getElementById(listId);
+      const tpl = document.getElementById(tplId);
+      if (!list || !tpl) return;
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      list.appendChild(node);
+    };
+
+    document.addEventListener("click", (e) => {
+      const el = e.target instanceof Element ? e.target : null;
+      if (!el) return;
+
+      if (el.closest("[data-add-service]")) {
+        addItem("servicesList", "serviceItemTpl");
+      }
+      if (el.closest("[data-add-strength]")) {
+        addItem("strengthsList", "strengthItemTpl");
+      }
+      if (el.closest("[data-add-hero-stat]")) {
+        addItem("heroStatsList", "heroStatItemTpl");
+      }
+      if (el.closest("[data-add-concept-point]")) {
+        addItem("conceptPointsList", "conceptPointTpl");
+      }
+      if (el.closest("[data-add-contact-example]")) {
+        addItem("contactExamplesList", "contactExampleTpl");
+      }
+      if (el.closest("[data-remove]")) {
+        const row = el.closest(".item-row");
+        if (row) row.remove();
+      }
+      if (el.closest("[data-news-create]")) {
+        const root = el.closest(".news-create");
+        if (!root) return;
+        submitNewsForm("/admin/news/create", root);
+      }
+      if (el.closest("[data-news-update]")) {
+        const root = el.closest(".news-item");
+        if (!root) return;
+        const id = root.getAttribute("data-news-id");
+        if (!id) return;
+        submitNewsForm(`/admin/news/update/${id}`, root);
+      }
+      if (el.closest("[data-news-delete]")) {
+        const root = el.closest(".news-item");
+        if (!root) return;
+        const id = root.getAttribute("data-news-id");
+        if (!id) return;
+        if (!confirm("确定删除此新闻吗？")) return;
+        fetch(`/admin/news/delete/${id}`, { method: "POST" })
+          .then(() => window.location.reload())
+          .catch(() => alert("删除失败，请稍后再试"));
+      }
+    });
+
+    const submitNewsForm = (url, root) => {
+      const title = root.querySelector('input[name="title"]')?.value?.trim() || "";
+      if (!title) {
+        alert("请填写标题");
+        return;
+      }
+      const fd = new FormData();
+      fd.append("title", title);
+      const body = root.querySelector('textarea[name="body"]')?.value || "";
+      fd.append("body", body);
+      const image = root.querySelector('input[name="image"]')?.files?.[0];
+      const attachment = root.querySelector('input[name="attachment"]')?.files?.[0];
+      if (image) fd.append("image", image);
+      if (attachment) fd.append("attachment", attachment);
+      const isPublished = root.querySelector('input[name="is_published"]')?.checked;
+      if (isPublished) fd.append("is_published", "on");
+      fetch(url, { method: "POST", body: fd })
+        .then(() => window.location.reload())
+        .catch(() => alert("提交失败，请稍后再试"));
+    };
+  </script>
+</body>
+</html>
