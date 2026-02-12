@@ -72,7 +72,18 @@
       border: 1px solid rgba(11, 59, 102, .10);
       background: #f7fbff;
     }
-    .service-media-item img { width: 100%; height: 220px; object-fit: cover; display: block; }
+    .service-media-item img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+      cursor: zoom-in;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .service-media-item img:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(11, 59, 102, .16);
+    }
     .service-files {
       margin-top: 1.2rem;
       border: 1px solid rgba(11, 59, 102, .10);
@@ -91,6 +102,54 @@
       text-decoration: none;
     }
     .service-files-link:hover { text-decoration: underline; }
+
+    .service-image-viewer {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 12, 18, .82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 24px;
+    }
+    .service-image-viewer.is-open { display: flex; }
+    .service-image-viewer-inner {
+      position: relative;
+      max-width: min(96vw, 1400px);
+      max-height: 96vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .service-image-viewer-img {
+      width: auto;
+      height: auto;
+      max-width: min(96vw, 1400px);
+      max-height: 92vh;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, .45);
+      background: #0f1720;
+    }
+    .service-image-viewer-close {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .95);
+      color: #1f2937;
+      font-size: 18px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, .3);
+    }
+    .service-image-viewer-close:hover { background: #fff; }
     @media (max-width: 768px) {
       .service-media-grid { grid-template-columns: 1fr; }
       .service-media-item img { height: 200px; }
@@ -137,5 +196,51 @@
       </div>
     </div>
   </section>
+  <div id="serviceImageViewer" class="service-image-viewer" aria-hidden="true">
+    <div class="service-image-viewer-inner">
+      <button id="serviceImageViewerClose" class="service-image-viewer-close" type="button" aria-label="关闭">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <img id="serviceImageViewerImg" class="service-image-viewer-img" src="" alt="">
+    </div>
+  </div>
+  <script>
+    (() => {
+      const viewer = document.getElementById("serviceImageViewer");
+      const viewerImg = document.getElementById("serviceImageViewerImg");
+      const viewerClose = document.getElementById("serviceImageViewerClose");
+      const images = document.querySelectorAll(".service-media-item img");
+      if (!viewer || !viewerImg || images.length === 0) return;
+
+      const openViewer = (src, alt) => {
+        viewerImg.src = src;
+        viewerImg.alt = alt || "";
+        viewer.classList.add("is-open");
+        viewer.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      };
+
+      const closeViewer = () => {
+        viewer.classList.remove("is-open");
+        viewer.setAttribute("aria-hidden", "true");
+        viewerImg.src = "";
+        document.body.style.overflow = "";
+      };
+
+      images.forEach((img) => {
+        img.addEventListener("click", () => openViewer(img.src, img.alt));
+      });
+
+      viewerClose?.addEventListener("click", closeViewer);
+      viewer.addEventListener("click", (e) => {
+        if (e.target === viewer) closeViewer();
+      });
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && viewer.classList.contains("is-open")) {
+          closeViewer();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

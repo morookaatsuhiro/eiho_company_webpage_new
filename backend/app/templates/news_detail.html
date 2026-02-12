@@ -94,6 +94,13 @@
       object-fit: cover;
       border-radius: 16px;
       border: 1px solid rgba(11, 59, 102, .10);
+      cursor: zoom-in;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .news-detail-image:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(11, 59, 102, .16);
     }
 
     .news-detail-gallery {
@@ -127,6 +134,63 @@
     .news-files-list { display: grid; gap: .35rem; }
     .news-file-link { color: #0b3b66; font-weight: 700; text-decoration: none; }
     .news-file-link:hover { text-decoration: underline; }
+
+    .news-image-viewer {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 12, 18, .82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 24px;
+    }
+
+    .news-image-viewer.is-open {
+      display: flex;
+    }
+
+    .news-image-viewer-inner {
+      position: relative;
+      max-width: min(96vw, 1400px);
+      max-height: 96vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .news-image-viewer-img {
+      width: auto;
+      height: auto;
+      max-width: min(96vw, 1400px);
+      max-height: 92vh;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, .45);
+      background: #0f1720;
+    }
+
+    .news-image-viewer-close {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .95);
+      color: #1f2937;
+      font-size: 18px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, .3);
+    }
+
+    .news-image-viewer-close:hover {
+      background: #fff;
+    }
     @media (max-width: 768px) {
       .news-detail-gallery { grid-template-columns: 1fr; }
     }
@@ -183,5 +247,51 @@
       </div>
     </div>
   </section>
+  <div id="newsImageViewer" class="news-image-viewer" aria-hidden="true">
+    <div class="news-image-viewer-inner">
+      <button id="newsImageViewerClose" class="news-image-viewer-close" type="button" aria-label="关闭">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <img id="newsImageViewerImg" class="news-image-viewer-img" src="" alt="">
+    </div>
+  </div>
+  <script>
+    (() => {
+      const viewer = document.getElementById("newsImageViewer");
+      const viewerImg = document.getElementById("newsImageViewerImg");
+      const viewerClose = document.getElementById("newsImageViewerClose");
+      const images = document.querySelectorAll(".news-detail-image");
+      if (!viewer || !viewerImg || images.length === 0) return;
+
+      const openViewer = (src, alt) => {
+        viewerImg.src = src;
+        viewerImg.alt = alt || "";
+        viewer.classList.add("is-open");
+        viewer.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      };
+
+      const closeViewer = () => {
+        viewer.classList.remove("is-open");
+        viewer.setAttribute("aria-hidden", "true");
+        viewerImg.src = "";
+        document.body.style.overflow = "";
+      };
+
+      images.forEach((img) => {
+        img.addEventListener("click", () => openViewer(img.src, img.alt));
+      });
+
+      viewerClose?.addEventListener("click", closeViewer);
+      viewer.addEventListener("click", (e) => {
+        if (e.target === viewer) closeViewer();
+      });
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && viewer.classList.contains("is-open")) {
+          closeViewer();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
