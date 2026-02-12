@@ -108,11 +108,12 @@
     const newsList = document.querySelector("#newsList");
     if (newsList) {
       try {
-        const newsRes = await fetch("/api/public/news");
+        const newsRes = await fetch("/api/public/news?limit=8");
         if (newsRes.ok) {
           const newsData = await newsRes.json();
           if (Array.isArray(newsData) && newsData.length > 0) {
             newsList.innerHTML = newsData
+              .slice(0, 8)
               .map(item => {
                 const title = escapeHtml(item.title || "");
                 const url = item.url || "#";

@@ -297,6 +297,12 @@ section[id], header[id] { scroll-margin-top: 92px; }
   gap: .85rem;
 }
 
+.news-more-wrap {
+  margin-top: .95rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .news-card-link {
   display: block;
   color: inherit;

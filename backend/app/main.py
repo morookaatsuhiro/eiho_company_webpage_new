@@ -21,7 +21,13 @@ from .db import (
     ensure_homepage_profile_rows_column,
     ensure_homepage_value_columns,
 )
-from .crud import get_or_create_home, update_home, list_published_news, get_news
+from .crud import (
+    get_or_create_home,
+    update_home,
+    list_published_news,
+    list_published_news_page,
+    get_news,
+)
 from .schemas import HomePublic, HomeUpdate, ContactRequest, NewsPublic
 from .admin_views import router as admin_router
 from .auth import is_logged_in
@@ -174,13 +180,64 @@ def public_home(db: Session = Depends(get_db)):
 
 
 @app.get("/api/public/news", response_model=list[NewsPublic])
-def public_news(db: Session = Depends(get_db)):
+def public_news(db: Session = Depends(get_db), limit: int = 8):
     """公开 API：获取已发布新闻列表（仅标题与链接）"""
-    items = list_published_news(db)
+    safe_limit = max(1, min(int(limit or 8), 100))
+    items = list_published_news(db)[:safe_limit]
     return [
         NewsPublic(id=item.id, title=item.title, url=f"/news/{item.id}")
         for item in items
     ]
+
+
+@app.get("/news", response_class=HTMLResponse)
+def news_list_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    q: str = "",
+    page: int = 1,
+    sort: str = "latest",
+):
+    """新闻列表页：支持搜索与分页（每页 10 条）。"""
+    page_size = 10
+    safe_page = max(int(page or 1), 1)
+    keyword = (q or "").strip()
+    safe_sort = (sort or "latest").strip().lower()
+    if safe_sort not in {"latest", "oldest"}:
+        safe_sort = "latest"
+
+    items, total = list_published_news_page(
+        db=db,
+        page=safe_page,
+        page_size=page_size,
+        keyword=keyword,
+        sort=safe_sort,
+    )
+    total_pages = max((total + page_size - 1) // page_size, 1)
+    current_page = min(safe_page, total_pages)
+    if current_page != safe_page:
+        items, total = list_published_news_page(
+            db=db,
+            page=current_page,
+            page_size=page_size,
+            keyword=keyword,
+            sort=safe_sort,
+        )
+
+    page_numbers = list(range(max(1, current_page - 2), min(total_pages, current_page + 2) + 1))
+    return templates.TemplateResponse(
+        "news_list.html",
+        {
+            "request": request,
+            "news_items": items,
+            "keyword": keyword,
+            "sort": safe_sort,
+            "page": current_page,
+            "total_pages": total_pages,
+            "total_items": total,
+            "page_numbers": page_numbers,
+        },
+    )
 
 
 @app.put("/api/admin/home")
@@ -268,7 +325,37 @@ def news_detail(news_id: int, request: Request, db: Session = Depends(get_db)):
 def service_detail(service_index: int, request: Request, db: Session = Depends(get_db)):
     """服务详情页"""
     home = get_or_create_home(db)
-    services = json.loads(home.services_json or "[]")
+    try:
+        services = json.loads(home.services_json or "[]")
+    except Exception:
+        services = []
+
+    if not isinstance(services, list) or len(services) == 0:
+        # 兜底：当数据库里 services 为空/损坏时，仍可打开默认服务详情页
+        services = [
+            {
+                "title": "輸入事業（Import）",
+                "body": "中国の先進的な製造ネットワークを駆使し、最新のカーアクセサリーや機能パーツをいち早く日本市場へ導入。徹底した検品体制で、コストパフォーマンスと品質を両立させた製品を提供します。",
+                "detail_body": "",
+                "detail_images": [],
+                "detail_files": [],
+            },
+            {
+                "title": "輸出事業（Export）",
+                "body": "信頼の「Made in Japan」ブランドの自動車用品・メンテナンス用品を中国市場へ展開。現地のニーズを的確に捉えたマーケティングにより、日本の優れた技術を世界へ広めます。",
+                "detail_body": "",
+                "detail_images": [],
+                "detail_files": [],
+            },
+            {
+                "title": "コンサル・OEM受託",
+                "body": "日中間の貿易実務だけでなく、市場調査から製品のオリジナル開発（OEM）まで、お客様のビジネス拡大をトータルにサポートいたします。",
+                "detail_body": "",
+                "detail_images": [],
+                "detail_files": [],
+            },
+        ]
+
     if service_index < 0 or service_index >= len(services):
         raise HTTPException(status_code=404, detail="Service not found")
 

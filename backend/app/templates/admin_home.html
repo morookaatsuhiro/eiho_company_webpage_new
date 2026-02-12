@@ -164,6 +164,11 @@
       box-shadow:0 8px 20px rgba(15,94,166,.25);
     }
     .btn:active{transform:translateY(1px);}
+    .btn.disabled{
+      opacity:.6;
+      pointer-events:none;
+      box-shadow:none;
+    }
     .btn-outline{background:#fff;color:var(--brand);border:1px solid var(--brand);}
     .btn-outline:hover{color:#fff;}
     .btn-danger{background:#fff;color:#c62828;border:1px solid #c62828;}
@@ -222,6 +227,23 @@
     .news-publish-inline{display:flex;align-items:center;gap:6px;font-size:13px;color:#374151;margin-top:6px;}
     .news-publish-inline input[type="checkbox"]{width:auto;margin:0;}
     .news-item .item-actions{border-top:1px solid #eef2f8;padding-top:10px;margin-top:10px;}
+    .news-filter-form{margin-top:8px;}
+    .news-status-select{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid var(--field);
+      border-radius:12px;
+      margin-top:6px;
+      background:#fff;
+    }
+    .news-filter-actions{
+      justify-content:flex-start;
+      margin-top:0;
+    }
+    .news-pager{
+      justify-content:center;
+      margin-top:12px;
+    }
     .toast-stack{
       position:fixed;
       right:14px;
@@ -561,6 +583,25 @@
               <h4>已创建ニュース</h4>
               <span class="hint">支持修改后保存或删除</span>
             </div>
+            <div class="grid news-filter-form">
+              <div>
+                <label for="news_q">关键词检索</label>
+                <input id="news_q" name="news_q" value="{{ news_q or '' }}" placeholder="标题/正文关键词">
+              </div>
+              <div>
+                <label for="news_status">状态筛选</label>
+                <select id="news_status" name="news_status" class="news-status-select">
+                  <option value="all" {% if news_status == 'all' %}selected{% endif %}>全部</option>
+                  <option value="published" {% if news_status == 'published' %}selected{% endif %}>已发布</option>
+                  <option value="draft" {% if news_status == 'draft' %}selected{% endif %}>草稿</option>
+                </select>
+              </div>
+              <div class="full item-actions news-filter-actions">
+                <button class="btn btn-outline" type="button" data-news-filter-apply><i class="bi bi-search"></i> 检索</button>
+                <button class="btn btn-outline" type="button" data-news-filter-clear><i class="bi bi-x-circle"></i> 清空</button>
+                <span class="hint">当前结果：{{ news_total or 0 }} 条</span>
+              </div>
+            </div>
             {% if news_items and news_items|length > 0 %}
               <div class="news-list-wrap">
                 {% for n in news_items %}
@@ -616,6 +657,13 @@
                     </div>
                   </div>
                 {% endfor %}
+              </div>
+              <div class="item-actions news-pager">
+                <a class="btn btn-outline {% if news_page <= 1 %}disabled{% endif %}" href="/admin?news_q={{ news_q or '' }}&news_status={{ news_status or 'all' }}&news_page={{ news_page - 1 }}">上一页</a>
+                {% for p in news_page_numbers %}
+                  <a class="btn {% if p == news_page %}btn{% else %}btn-outline{% endif %}" href="/admin?news_q={{ news_q or '' }}&news_status={{ news_status or 'all' }}&news_page={{ p }}">{{ p }}</a>
+                {% endfor %}
+                <a class="btn btn-outline {% if news_page >= news_total_pages %}disabled{% endif %}" href="/admin?news_q={{ news_q or '' }}&news_status={{ news_status or 'all' }}&news_page={{ news_page + 1 }}">下一页</a>
               </div>
             {% else %}
               <div class="hint">暂无新闻</div>
@@ -1324,6 +1372,18 @@
       }
       if (el.closest("[data-add-profile-row]")) {
         addItem("profileRowsList", "profileRowTpl");
+      }
+      if (el.closest("[data-news-filter-apply]")) {
+        const q = document.getElementById("news_q")?.value?.trim() || "";
+        const status = document.getElementById("news_status")?.value || "all";
+        const params = new URLSearchParams();
+        if (q) params.set("news_q", q);
+        if (status && status !== "all") params.set("news_status", status);
+        params.set("news_page", "1");
+        window.location.href = `/admin?${params.toString()}`;
+      }
+      if (el.closest("[data-news-filter-clear]")) {
+        window.location.href = "/admin";
       }
       if (el.closest("[data-remove]")) {
         const row = el.closest(".item-row");

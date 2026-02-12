@@ -12,7 +12,15 @@ from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from .db import get_db
-from .crud import get_or_create_home, update_home, list_news, create_news, update_news, delete_news
+from .crud import (
+    get_or_create_home,
+    update_home,
+    list_news,
+    list_news_page,
+    create_news,
+    update_news,
+    delete_news,
+)
 from .github_storage import github_enabled, upload_to_github
 from .auth import ADMIN_USER, ADMIN_PASS_HASH, verify_password, create_session_token, is_logged_in
 from .schemas import HomeUpdate, ServiceItem, StrengthItem, HeroStatItem, ConceptPointItem
@@ -366,14 +374,45 @@ def admin_upload_service_assets(
 
 
 @router.get("/admin", response_class=HTMLResponse)
-def admin_home(request: Request, db: Session = Depends(get_db)):
+def admin_home(
+    request: Request,
+    db: Session = Depends(get_db),
+    news_q: str = "",
+    news_status: str = "all",
+    news_page: int = 1,
+):
     """后台管理主页（需要登录）"""
     if not is_logged_in(request):
         return RedirectResponse(url="/admin/login", status_code=302)
 
     try:
         home = get_or_create_home(db)
-        raw_news_items = list_news(db)
+        safe_page = max(int(news_page or 1), 1)
+        safe_status = (news_status or "all").strip().lower()
+        if safe_status not in {"all", "published", "draft"}:
+            safe_status = "all"
+        safe_keyword = (news_q or "").strip()
+        page_size = 10
+        raw_news_items, news_total = list_news_page(
+            db=db,
+            page=safe_page,
+            page_size=page_size,
+            keyword=safe_keyword,
+            status=safe_status,
+        )
+        news_total_pages = max((news_total + page_size - 1) // page_size, 1)
+        current_news_page = min(safe_page, news_total_pages)
+        if current_news_page != safe_page:
+            raw_news_items, news_total = list_news_page(
+                db=db,
+                page=current_news_page,
+                page_size=page_size,
+                keyword=safe_keyword,
+                status=safe_status,
+            )
+        news_page_numbers = list(
+            range(max(1, current_news_page - 2), min(news_total_pages, current_news_page + 2) + 1)
+        )
         for item in raw_news_items:
             item.image_paths = _parse_news_images(item)
             item.file_paths = _parse_news_files(item)
@@ -387,6 +426,12 @@ def admin_home(request: Request, db: Session = Depends(get_db)):
             "contact_examples": _parse_contact_examples(home.contact_examples_json or "[]"),
             "profile_rows": _parse_profile_rows(getattr(home, "profile_rows_json", "[]"), home),
             "news_items": raw_news_items,
+            "news_q": safe_keyword,
+            "news_status": safe_status,
+            "news_page": current_news_page,
+            "news_total": news_total,
+            "news_total_pages": news_total_pages,
+            "news_page_numbers": news_page_numbers,
         })
     except Exception as e:
         return templates.TemplateResponse(

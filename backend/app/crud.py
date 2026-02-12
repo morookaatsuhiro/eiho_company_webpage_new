@@ -2,6 +2,7 @@
 数据库 CRUD 操作
 """
 import json
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from .models import HomePage, News
 from .schemas import HomeUpdate
@@ -203,6 +204,69 @@ def list_published_news(db: Session) -> list[News]:
         .order_by(News.created_at.desc())
         .all()
     )
+
+
+def list_published_news_page(
+    db: Session,
+    page: int = 1,
+    page_size: int = 10,
+    keyword: str = "",
+    sort: str = "latest",
+) -> tuple[list[News], int]:
+    """分页查询已发布新闻，支持关键词搜索。"""
+    current_page = max(int(page or 1), 1)
+    size = max(int(page_size or 10), 1)
+    search = (keyword or "").strip()
+
+    query = db.query(News).filter(News.is_published.is_(True))
+    if search:
+        like = f"%{search}%"
+        query = query.filter(or_(News.title.ilike(like), News.body.ilike(like)))
+
+    total = query.count()
+    order_by = News.created_at.asc() if (sort or "").lower() == "oldest" else News.created_at.desc()
+    items = (
+        query
+        .order_by(order_by)
+        .offset((current_page - 1) * size)
+        .limit(size)
+        .all()
+    )
+    return items, total
+
+
+def list_news_page(
+    db: Session,
+    page: int = 1,
+    page_size: int = 10,
+    keyword: str = "",
+    status: str = "all",
+) -> tuple[list[News], int]:
+    """后台新闻分页查询，支持关键词与发布状态筛选。"""
+    current_page = max(int(page or 1), 1)
+    size = max(int(page_size or 10), 1)
+    search = (keyword or "").strip()
+    status_filter = (status or "all").strip().lower()
+
+    query = db.query(News)
+    if status_filter == "published":
+        query = query.filter(News.is_published.is_(True))
+    elif status_filter == "draft":
+        query = query.filter(News.is_published.is_(False))
+
+    if search:
+        like = f"%{search}%"
+        query = query.filter(or_(News.title.ilike(like), News.body.ilike(like)))
+
+    total = query.count()
+    items = (
+        query
+        .order_by(News.created_at.desc())
+        .offset((current_page - 1) * size)
+        .limit(size)
+        .all()
+    )
+    return items, total
 
 
 def get_news(db: Session, news_id: int) -> News | None:
