@@ -28,11 +28,78 @@
         radial-gradient(900px 380px at 10% -10%, rgba(15,94,166,.16), transparent 60%),
         radial-gradient(760px 300px at 110% 110%, rgba(52,127,206,.14), transparent 60%),
         linear-gradient(180deg,#f5f7fb 0%, #eef2f8 100%);
+      overflow:hidden;
+      position:relative;
+      isolation:isolate;
+    }
+    body::before,
+    body::after{
+      content:"";
+      position:fixed;
+      border-radius:999px;
+      pointer-events:none;
+      z-index:0;
+      filter:blur(4px);
+      opacity:.55;
+      will-change:transform;
+    }
+    body::before{
+      width:420px;
+      height:420px;
+      top:-120px;
+      left:-100px;
+      background:radial-gradient(circle at 35% 35%, rgba(15,94,166,.38), rgba(15,94,166,.1) 58%, transparent 72%);
+      animation:bg-float-a 16s ease-in-out infinite;
+    }
+    body::after{
+      width:520px;
+      height:520px;
+      right:-180px;
+      bottom:-180px;
+      background:radial-gradient(circle at 50% 45%, rgba(61,134,209,.35), rgba(61,134,209,.08) 62%, transparent 76%);
+      animation:bg-float-b 19s ease-in-out infinite;
+    }
+    .bg-wave{
+      position:fixed;
+      inset:-18%;
+      pointer-events:none;
+      z-index:0;
+      opacity:.24;
+      background:
+        radial-gradient(1300px 260px at 20% 26%, rgba(132,173,223,.28), transparent 70%),
+        radial-gradient(1100px 240px at 75% 72%, rgba(109,166,230,.25), transparent 70%);
+      animation:bg-wave 22s linear infinite;
+    }
+    .network-canvas{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:0;
+      pointer-events:none;
+      opacity:.95;
+    }
+    @keyframes bg-float-a{
+      0%,100%{transform:translate(0,0) scale(1);}
+      50%{transform:translate(34px,22px) scale(1.06);}
+    }
+    @keyframes bg-float-b{
+      0%,100%{transform:translate(0,0) scale(1);}
+      50%{transform:translate(-28px,-26px) scale(1.08);}
+    }
+    @keyframes bg-wave{
+      0%{transform:translateX(0) translateY(0);}
+      50%{transform:translateX(-2.5%) translateY(1.5%);}
+      100%{transform:translateX(0) translateY(0);}
     }
     .card{
+      position:relative;
+      z-index:1;
       width:100%;
       max-width:460px;
-      background:#fff;
+      background:rgba(255,255,255,.92);
+      -webkit-backdrop-filter:blur(6px);
+      backdrop-filter:blur(6px);
       border:1px solid var(--card-border);
       border-radius:20px;
       padding:26px;
@@ -117,9 +184,16 @@
       font-size:12px;
       text-align:center;
     }
+    @media (prefers-reduced-motion: reduce){
+      body::before,
+      body::after,
+      .bg-wave{animation:none;}
+    }
   </style>
 </head>
 <body>
+  <canvas id="networkCanvas" class="network-canvas" aria-hidden="true"></canvas>
+  <div class="bg-wave" aria-hidden="true"></div>
   <div class="card">
     <h2 class="brand"><span class="brand-badge">E</span>EIHO Admin</h2>
     <p class="sub">后台管理系统登录</p>
@@ -135,5 +209,117 @@
       初期：admin / admin123（请你上线前修改）
     </p>
   </div>
+  <script>
+    (() => {
+      const canvas = document.getElementById("networkCanvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const state = {
+        w: 0,
+        h: 0,
+        nodes: [],
+        maxDist: 140,
+        mouse: { x: -9999, y: -9999, active: false },
+      };
+
+      const resize = () => {
+        state.w = window.innerWidth;
+        state.h = window.innerHeight;
+        canvas.width = Math.floor(state.w * dpr);
+        canvas.height = Math.floor(state.h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const density = Math.max(26, Math.floor((state.w * state.h) / 26000));
+        state.nodes = Array.from({ length: density }, () => ({
+          x: Math.random() * state.w,
+          y: Math.random() * state.h,
+          vx: (Math.random() - 0.5) * 0.55,
+          vy: (Math.random() - 0.5) * 0.55,
+          r: Math.random() * 1.8 + 0.8,
+        }));
+      };
+
+      const onMove = (e) => {
+        state.mouse.x = e.clientX;
+        state.mouse.y = e.clientY;
+        state.mouse.active = true;
+      };
+      const onLeave = () => {
+        state.mouse.active = false;
+      };
+
+      const draw = () => {
+        ctx.clearRect(0, 0, state.w, state.h);
+        const nodes = state.nodes;
+        const maxDist = state.maxDist;
+
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          if (!prefersReducedMotion) {
+            n.x += n.vx;
+            n.y += n.vy;
+          }
+
+          if (n.x < -20) n.x = state.w + 20;
+          if (n.x > state.w + 20) n.x = -20;
+          if (n.y < -20) n.y = state.h + 20;
+          if (n.y > state.h + 20) n.y = -20;
+
+          if (state.mouse.active) {
+            const dxm = state.mouse.x - n.x;
+            const dym = state.mouse.y - n.y;
+            const dm = Math.hypot(dxm, dym);
+            if (dm < 120 && dm > 0.001) {
+              const pull = (120 - dm) / 120;
+              n.x -= (dxm / dm) * pull * 0.6;
+              n.y -= (dym / dm) * pull * 0.6;
+            }
+          }
+
+          for (let j = i + 1; j < nodes.length; j++) {
+            const m = nodes[j];
+            const dx = n.x - m.x;
+            const dy = n.y - m.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > maxDist) continue;
+            const alpha = 1 - dist / maxDist;
+            ctx.beginPath();
+            ctx.moveTo(n.x, n.y);
+            ctx.lineTo(m.x, m.y);
+            ctx.strokeStyle = `rgba(64, 120, 190, ${0.16 * alpha})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+
+        for (const n of nodes) {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(31, 89, 160, 0.55)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r + 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(110, 164, 226, 0.08)";
+          ctx.fill();
+        }
+
+        requestAnimationFrame(draw);
+      };
+
+      resize();
+      window.addEventListener("resize", resize);
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("touchmove", (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const t = e.touches[0];
+        onMove({ clientX: t.clientX, clientY: t.clientY });
+      }, { passive: true });
+      window.addEventListener("mouseleave", onLeave);
+      draw();
+    })();
+  </script>
 </body>
 </html>
