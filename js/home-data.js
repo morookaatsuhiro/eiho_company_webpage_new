@@ -148,12 +148,16 @@
       const html = data.services
         .map((s, i) => {
           const icon = normalizeIcon(s.icon, icons[i % icons.length]);
+          const detailUrl = `/services/${i}`;
           return `
   <div class="col-lg-4">
     <div class="card svc-card p-4">
       <div class="icon mb-3"><i class="bi ${icon}"></i></div>
       <h5 class="fw-bold">${escapeHtml(s.title || "")}</h5>
       <p class="text-secondary mb-0">${escapeHtml(s.body || "")}</p>
+      <a class="btn btn-sm btn-outline-primary btn-outline-brand mt-3" href="${detailUrl}">
+        詳細を見る <i class="bi bi-arrow-right-short"></i>
+      </a>
     </div>
   </div>`;
         })

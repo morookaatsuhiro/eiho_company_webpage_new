@@ -194,6 +194,77 @@ def news_detail(news_id: int, request: Request, db: Session = Depends(get_db)):
     )
 
 
+@app.get("/services/{service_index}", response_class=HTMLResponse)
+def service_detail(service_index: int, request: Request, db: Session = Depends(get_db)):
+    """服务详情页"""
+    home = get_or_create_home(db)
+    services = json.loads(home.services_json or "[]")
+    if service_index < 0 or service_index >= len(services):
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    raw = services[service_index]
+    if not isinstance(raw, dict):
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    detail_images_raw = raw.get("detail_images") or []
+    if isinstance(detail_images_raw, str):
+        detail_images = [
+            line.strip()
+            for line in detail_images_raw.replace("，", ",").replace(",", "\n").splitlines()
+            if line.strip()
+        ]
+    elif isinstance(detail_images_raw, list):
+        detail_images = []
+        for line in detail_images_raw:
+            if isinstance(line, dict):
+                value = str(line.get("url") or line.get("src") or "").strip()
+            else:
+                value = str(line).strip()
+            if value:
+                detail_images.append(value)
+    else:
+        detail_images = []
+
+    detail_files_raw = raw.get("detail_files") or []
+    detail_files = []
+    if isinstance(detail_files_raw, str):
+        for line in detail_files_raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if "|" in line:
+                file_name, file_url = line.split("|", 1)
+                file_name = file_name.strip()
+                file_url = file_url.strip()
+            else:
+                file_name = "文件"
+                file_url = line
+            if file_url:
+                detail_files.append({"name": file_name or "文件", "url": file_url})
+    elif isinstance(detail_files_raw, list):
+        for row in detail_files_raw:
+            if isinstance(row, dict):
+                file_url = str(row.get("url") or "").strip()
+                file_name = str(row.get("name") or "").strip()
+            else:
+                file_url = str(row).strip()
+                file_name = "文件"
+            if file_url:
+                detail_files.append({"name": file_name or "文件", "url": file_url})
+
+    service = {
+        "title": str(raw.get("title") or ""),
+        "body": str(raw.get("body") or ""),
+        "detail_body": str(raw.get("detail_body") or ""),
+        "detail_images": detail_images,
+        "detail_files": detail_files,
+    }
+    return templates.TemplateResponse(
+        "service_detail.html",
+        {"request": request, "service": service, "service_index": service_index}
+    )
+
+
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
     """404 错误处理"""

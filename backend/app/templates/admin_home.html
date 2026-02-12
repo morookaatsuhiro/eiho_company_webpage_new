@@ -37,6 +37,15 @@
     .item-fields.one{grid-template-columns:1fr;}
     .item-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
     .item-actions .btn{padding:6px 10px;font-weight:700;}
+    .subpage-hint{
+      margin-top:8px;
+      padding:8px 10px;
+      border:1px dashed #cddcf3;
+      border-radius:10px;
+      background:#f8fbff;
+      font-size:12px;
+      color:#4b5b70;
+    }
     .news-wrap{margin-top:18px;}
     .news-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:#6b7280;}
     .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3f51b5;font-weight:700;font-size:11px;}
@@ -408,11 +417,12 @@
             </div>
           </div>
           <div class="full">
-            <div class="hint">可新增/删除多条服务，每条包含「标题」「内容」「图标（可选）」</div>
+            <div class="hint">可新增/删除多条服务，每条包含「标题」「内容」「图标（可选）」「详情页正文」「多图」「多文件」。</div>
             <div id="servicesList">
               {% if services and services|length > 0 %}
                 {% for s in services %}
                   <div class="item-row">
+                    <div class="subpage-hint">子页面链接：<a href="/services/{{ loop.index0 }}" target="_blank">/services/{{ loop.index0 }}</a>（保存后生效）</div>
                     <div class="item-fields">
                       <div>
                         <label>标题</label>
@@ -425,6 +435,27 @@
                       <div>
                         <label>图标（可选）</label>
                         <input name="services_icon" value="{{ s.icon or '' }}" placeholder="box-seam">
+                      </div>
+                    </div>
+                    <div class="item-fields one">
+                      <div>
+                        <label>详情页正文（可选）</label>
+                        <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容">{{ s.detail_body or '' }}</textarea>
+                      </div>
+                    </div>
+                    <div class="item-fields simple">
+                      <div>
+                        <label>详情页图片（可选，多张）</label>
+                        <textarea name="services_detail_images" placeholder="每行一张图片 URL&#10;https://example.com/a.jpg&#10;https://example.com/b.jpg">{{ (s.detail_images or [])|join('\n') }}</textarea>
+                        <div class="hint">也可直接上传本地图片（支持多选）</div>
+                        <input type="file" accept="image/*" multiple data-services-images-upload title="上传详情页图片">
+                      </div>
+                      <div>
+                        <label>详情页文件（可选，多个）</label>
+                        <textarea name="services_detail_files" placeholder="每行一个文件，格式：名称|URL&#10;产品手册|https://example.com/manual.pdf&#10;报价单|https://example.com/quote.xlsx">{% if s.detail_files and s.detail_files|length > 0 %}{% for f in s.detail_files %}{{ (f.name or '文件') ~ '|' ~ (f.url or '') }}{% if not loop.last %}
+{% endif %}{% endfor %}{% endif %}</textarea>
+                        <div class="hint">也可直接上传本地文件（支持多选）</div>
+                        <input type="file" multiple data-services-files-upload title="上传详情页文件">
                       </div>
                     </div>
                     <div class="item-actions">
@@ -446,6 +477,26 @@
                     <div>
                       <label>图标（可选）</label>
                       <input name="services_icon" value="" placeholder="box-seam">
+                    </div>
+                  </div>
+                  <div class="item-fields one">
+                    <div>
+                      <label>详情页正文（可选）</label>
+                      <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容"></textarea>
+                    </div>
+                  </div>
+                  <div class="item-fields simple">
+                    <div>
+                      <label>详情页图片（可选，多张）</label>
+                      <textarea name="services_detail_images" placeholder="每行一张图片 URL&#10;https://example.com/a.jpg&#10;https://example.com/b.jpg"></textarea>
+                      <div class="hint">也可直接上传本地图片（支持多选）</div>
+                      <input type="file" accept="image/*" multiple data-services-images-upload title="上传详情页图片">
+                    </div>
+                    <div>
+                      <label>详情页文件（可选，多个）</label>
+                      <textarea name="services_detail_files" placeholder="每行一个文件，格式：名称|URL&#10;产品手册|https://example.com/manual.pdf"></textarea>
+                      <div class="hint">也可直接上传本地文件（支持多选）</div>
+                      <input type="file" multiple data-services-files-upload title="上传详情页文件">
                     </div>
                   </div>
                   <div class="item-actions">
@@ -695,6 +746,26 @@
           <input name="services_icon" value="" placeholder="box-seam" title="Bootstrap Icons 名称">
         </div>
       </div>
+      <div class="item-fields one">
+        <div>
+          <label>详情页正文（可选）</label>
+          <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容" title="详情页正文"></textarea>
+        </div>
+      </div>
+      <div class="item-fields simple">
+        <div>
+          <label>详情页图片（可选，多张）</label>
+          <textarea name="services_detail_images" placeholder="每行一张图片 URL&#10;https://example.com/a.jpg&#10;https://example.com/b.jpg" title="详情页图片"></textarea>
+          <div class="hint">也可直接上传本地图片（支持多选）</div>
+          <input type="file" accept="image/*" multiple data-services-images-upload title="上传详情页图片">
+        </div>
+        <div>
+          <label>详情页文件（可选，多个）</label>
+          <textarea name="services_detail_files" placeholder="每行一个文件，格式：名称|URL&#10;产品手册|https://example.com/manual.pdf" title="详情页文件"></textarea>
+          <div class="hint">也可直接上传本地文件（支持多选）</div>
+          <input type="file" multiple data-services-files-upload title="上传详情页文件">
+        </div>
+      </div>
       <div class="item-actions">
         <button type="button" class="btn btn-danger" data-remove>删除</button>
       </div>
@@ -830,6 +901,62 @@
         fetch(`/admin/news/delete/${id}`, { method: "POST" })
           .then(() => window.location.reload())
           .catch(() => alert("删除失败，请稍后再试"));
+      }
+    });
+
+    const appendLines = (textarea, lines) => {
+      if (!textarea || !Array.isArray(lines) || lines.length === 0) return;
+      const current = (textarea.value || "").trim();
+      const next = lines.join("\n");
+      textarea.value = current ? `${current}\n${next}` : next;
+    };
+
+    const uploadServiceAssets = async (input, kind) => {
+      const root = input.closest(".item-row");
+      if (!root) return;
+      const files = Array.from(input.files || []);
+      if (files.length === 0) return;
+
+      const fd = new FormData();
+      fd.append("kind", kind);
+      files.forEach((file) => fd.append("files", file));
+
+      input.disabled = true;
+      try {
+        const res = await fetch("/admin/services/upload", {
+          method: "POST",
+          body: fd
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
+          const msg = data?.detail || "上传失败，请稍后再试";
+          alert(msg);
+          return;
+        }
+
+        if (kind === "image") {
+          const area = root.querySelector('textarea[name="services_detail_images"]');
+          appendLines(area, data.items.map((item) => item.url).filter(Boolean));
+        } else {
+          const area = root.querySelector('textarea[name="services_detail_files"]');
+          appendLines(area, data.items.map((item) => `${item.name || "文件"}|${item.url || ""}`));
+        }
+      } catch (_) {
+        alert("上传失败，请稍后再试");
+      } finally {
+        input.disabled = false;
+        input.value = "";
+      }
+    };
+
+    document.addEventListener("change", (e) => {
+      const el = e.target instanceof Element ? e.target : null;
+      if (!el) return;
+      if (el.matches("[data-services-images-upload]")) {
+        uploadServiceAssets(el, "image");
+      }
+      if (el.matches("[data-services-files-upload]")) {
+        uploadServiceAssets(el, "file");
       }
     });
 

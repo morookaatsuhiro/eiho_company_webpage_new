@@ -1,10 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Any
+
+
+class ServiceFileItem(BaseModel):
+    name: str
+    url: str
 
 class ServiceItem(BaseModel):
     title: str
     body: str
     icon: Optional[str] = None
+    detail_body: Optional[str] = None
+    detail_images: List[str] = Field(default_factory=list)
+    detail_files: List[ServiceFileItem] = Field(default_factory=list)
 
 class StrengthItem(BaseModel):
     title: str

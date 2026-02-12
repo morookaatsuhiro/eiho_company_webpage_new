@@ -5,9 +5,10 @@ import json
 import shutil
 import uuid
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import List, Type, Optional
 from fastapi import APIRouter, Request, Depends, Form, UploadFile, File
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from .db import get_db
@@ -28,10 +29,59 @@ def _parse_services(services_json: str) -> list:
     for item in raw:
         if not isinstance(item, dict):
             continue
+        detail_images_raw = item.get("detail_images") or []
+        if isinstance(detail_images_raw, str):
+            detail_images = [
+                line.strip()
+                for line in detail_images_raw.replace("，", ",").replace(",", "\n").splitlines()
+                if line.strip()
+            ]
+        elif isinstance(detail_images_raw, list):
+            detail_images = []
+            for line in detail_images_raw:
+                if isinstance(line, dict):
+                    value = str(line.get("url") or line.get("src") or "").strip()
+                else:
+                    value = str(line).strip()
+                if value:
+                    detail_images.append(value)
+        else:
+            detail_images = []
+
+        detail_files_raw = item.get("detail_files") or []
+        detail_files = []
+        if isinstance(detail_files_raw, str):
+            for line in detail_files_raw.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                if "|" in line:
+                    file_name, file_url = line.split("|", 1)
+                    file_name = file_name.strip()
+                    file_url = file_url.strip()
+                else:
+                    file_url = line
+                    file_name = Path(urlparse(file_url).path).name or "文件"
+                if file_url:
+                    detail_files.append({"name": file_name or "文件", "url": file_url})
+        elif isinstance(detail_files_raw, list):
+            for row in detail_files_raw:
+                if isinstance(row, dict):
+                    file_url = str(row.get("url") or "").strip()
+                    file_name = str(row.get("name") or "").strip()
+                else:
+                    file_url = str(row).strip()
+                    file_name = Path(urlparse(file_url).path).name or "文件"
+                if file_url:
+                    detail_files.append({"name": file_name or "文件", "url": file_url})
+
         out.append(ServiceItem(
             title=item.get("title") or "",
             body=item.get("body") or "",
             icon=item.get("icon"),
+            detail_body=item.get("detail_body") or "",
+            detail_images=detail_images,
+            detail_files=detail_files,
         ))
     return out
 
@@ -102,6 +152,8 @@ def _parse_contact_examples(examples_json: str) -> list:
     return out
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_BASE = Path(__file__).resolve().parents[2] / "uploads" / "news"
+SERVICE_IMAGES_UPLOAD_BASE = Path(__file__).resolve().parents[2] / "uploads" / "services" / "images"
+SERVICE_FILES_UPLOAD_BASE = Path(__file__).resolve().parents[2] / "uploads" / "services" / "files"
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
@@ -123,6 +175,37 @@ def _store_upload(upload: UploadFile | None) -> str:
     if github_enabled():
         return upload_to_github(upload, folder="news")
     return _save_local_upload(upload)
+
+
+def _save_local_service_upload(upload: UploadFile, kind: str) -> dict:
+    ext = Path(upload.filename or "").suffix
+    filename = f"{uuid.uuid4().hex}{ext}"
+    if kind == "image":
+        base = SERVICE_IMAGES_UPLOAD_BASE
+        url_prefix = "/static/uploads/services/images"
+    else:
+        base = SERVICE_FILES_UPLOAD_BASE
+        url_prefix = "/static/uploads/services/files"
+
+    base.mkdir(parents=True, exist_ok=True)
+    target = base / filename
+    with target.open("wb") as f:
+        shutil.copyfileobj(upload.file, f)
+
+    return {
+        "name": upload.filename or filename,
+        "url": f"{url_prefix}/{filename}",
+    }
+
+
+def _store_service_upload(upload: UploadFile, kind: str) -> dict:
+    if github_enabled():
+        folder = "services/images" if kind == "image" else "services/files"
+        return {
+            "name": upload.filename or "文件",
+            "url": upload_to_github(upload, folder=folder),
+        }
+    return _save_local_service_upload(upload, kind)
 
 
 @router.get("/admin/login", response_class=HTMLResponse)
@@ -157,6 +240,38 @@ def admin_logout():
     resp = RedirectResponse(url="/admin/login", status_code=302)
     resp.delete_cookie("eiho_session")
     return resp
+
+
+@router.post("/admin/services/upload")
+def admin_upload_service_assets(
+    request: Request,
+    kind: str = Form(...),
+    files: List[UploadFile] = File(...),
+):
+    """上传服务详情页资源（图片/文件）"""
+    if not is_logged_in(request):
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
+    normalized_kind = (kind or "").strip().lower()
+    if normalized_kind not in {"image", "file"}:
+        return JSONResponse(status_code=400, content={"detail": "Invalid upload kind"})
+
+    if not files:
+        return JSONResponse(status_code=400, content={"detail": "No files uploaded"})
+
+    uploaded = []
+    for upload in files:
+        if not upload or not upload.filename:
+            continue
+        if normalized_kind == "image":
+            content_type = (upload.content_type or "").lower()
+            if not content_type.startswith("image/"):
+                continue
+        uploaded.append(_store_service_upload(upload, normalized_kind))
+
+    if not uploaded:
+        return JSONResponse(status_code=400, content={"detail": "No valid files uploaded"})
+    return {"ok": True, "items": uploaded}
 
 
 @router.get("/admin", response_class=HTMLResponse)
@@ -247,6 +362,9 @@ def admin_save(
     services_title: List[str] = Form([]),
     services_body: List[str] = Form([]),
     services_icon: List[str] = Form([]),
+    services_detail_body: List[str] = Form([]),
+    services_detail_images: List[str] = Form([]),
+    services_detail_files: List[str] = Form([]),
     strengths_title: List[str] = Form([]),
     strengths_body: List[str] = Form([]),
     strengths_icon: List[str] = Form([]),
@@ -265,6 +383,66 @@ def admin_save(
             if not (title or body or icon):
                 continue
             items.append(cls(title=title, body=body, icon=icon or None))
+        return items
+
+    def _build_services(
+        titles: List[str],
+        bodies: List[str],
+        icons: List[str],
+        detail_bodies: List[str],
+        detail_images_values: List[str],
+        detail_files_values: List[str],
+    ) -> list:
+        items = []
+        max_len = max(
+            len(titles),
+            len(bodies),
+            len(icons),
+            len(detail_bodies),
+            len(detail_images_values),
+            len(detail_files_values),
+            0,
+        )
+        for i in range(max_len):
+            title = titles[i].strip() if i < len(titles) else ""
+            body = bodies[i].strip() if i < len(bodies) else ""
+            icon = icons[i].strip() if i < len(icons) else ""
+            detail_body = detail_bodies[i].strip() if i < len(detail_bodies) else ""
+            detail_images_raw = detail_images_values[i] if i < len(detail_images_values) else ""
+            detail_files_raw = detail_files_values[i] if i < len(detail_files_values) else ""
+
+            detail_images = [
+                line.strip()
+                for line in str(detail_images_raw).replace("，", ",").replace(",", "\n").splitlines()
+                if line.strip()
+            ]
+
+            detail_files = []
+            for line in str(detail_files_raw).splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                if "|" in line:
+                    file_name, file_url = line.split("|", 1)
+                    file_name = file_name.strip()
+                    file_url = file_url.strip()
+                else:
+                    file_url = line
+                    file_name = Path(urlparse(file_url).path).name or "文件"
+                if file_url:
+                    detail_files.append({"name": file_name or "文件", "url": file_url})
+
+            if not (title or body or icon or detail_body or detail_images or detail_files):
+                continue
+
+            items.append(ServiceItem(
+                title=title,
+                body=body,
+                icon=icon or None,
+                detail_body=detail_body or None,
+                detail_images=detail_images,
+                detail_files=detail_files,
+            ))
         return items
 
     def _build_hero_stats(values: List[str], suffixes: List[str], labels: List[str]) -> list:
@@ -300,7 +478,14 @@ def admin_save(
     def _clean(value: str) -> Optional[str]:
         return value.strip() if value and value.strip() else None
 
-    services_list = _build_items(services_title, services_body, services_icon, ServiceItem)
+    services_list = _build_services(
+        services_title,
+        services_body,
+        services_icon,
+        services_detail_body,
+        services_detail_images,
+        services_detail_files,
+    )
     strengths_list = _build_items(strengths_title, strengths_body, strengths_icon, StrengthItem)
     hero_stats_list = _build_hero_stats(hero_stat_value, hero_stat_suffix, hero_stat_label)
     concept_points_list = _build_concept_points(concept_point_label, concept_point_body)
