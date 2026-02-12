@@ -25,6 +25,34 @@
       margin:0;
       padding:24px;
       color:var(--text);
+      overflow-x:hidden;
+      position:relative;
+      isolation:isolate;
+    }
+    .network-canvas{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:0;
+      pointer-events:none;
+      opacity:.58;
+    }
+    .bg-wave{
+      position:fixed;
+      inset:-18%;
+      pointer-events:none;
+      z-index:0;
+      opacity:.2;
+      background:
+        radial-gradient(1300px 260px at 20% 26%, rgba(132,173,223,.28), transparent 70%),
+        radial-gradient(1100px 240px at 75% 72%, rgba(109,166,230,.25), transparent 70%);
+      animation:bg-wave 22s linear infinite;
+    }
+    @keyframes bg-wave{
+      0%{transform:translateX(0) translateY(0);}
+      50%{transform:translateX(-2.5%) translateY(1.5%);}
+      100%{transform:translateX(0) translateY(0);}
     }
     .top{
       display:flex;
@@ -40,12 +68,14 @@
       -webkit-backdrop-filter:blur(6px);
       backdrop-filter:blur(6px);
       box-shadow:0 10px 28px rgba(20,37,63,.07);
+      position:relative;
+      z-index:1;
     }
     .top-title{margin:0;font-size:24px;line-height:1.2;font-weight:900;letter-spacing:.2px;}
     .top-sub{margin:4px 0 0;color:var(--muted);font-size:13px;}
     .top-links{display:flex;align-items:center;gap:8px;white-space:nowrap;}
     .top-links .dot{color:#9aa8bb;}
-    .wrap{max-width:1200px;margin:0 auto;}
+    .wrap{max-width:1200px;margin:0 auto;position:relative;z-index:1;}
     .card{
       background:var(--card);
       border-radius:18px;
@@ -177,9 +207,14 @@
       .news-create-grid{grid-template-columns:1fr;}
       .news-item-grid{grid-template-columns:1fr;}
     }
+    @media (prefers-reduced-motion: reduce){
+      .bg-wave{animation:none;}
+    }
   </style>
 </head>
 <body>
+  <canvas id="networkCanvas" class="network-canvas" aria-hidden="true"></canvas>
+  <div class="bg-wave" aria-hidden="true"></div>
   <div class="top">
     <div>
       <h2 class="top-title">主页内容管理</h2>
@@ -1007,6 +1042,112 @@
   </template>
 
   <script>
+    (() => {
+      const canvas = document.getElementById("networkCanvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const state = {
+        w: 0,
+        h: 0,
+        nodes: [],
+        maxDist: 145,
+        mouse: { x: -9999, y: -9999, active: false },
+      };
+
+      const resize = () => {
+        state.w = window.innerWidth;
+        state.h = window.innerHeight;
+        canvas.width = Math.floor(state.w * dpr);
+        canvas.height = Math.floor(state.h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const density = Math.max(34, Math.floor((state.w * state.h) / 30000));
+        state.nodes = Array.from({ length: density }, () => ({
+          x: Math.random() * state.w,
+          y: Math.random() * state.h,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          r: Math.random() * 1.8 + 0.7,
+        }));
+      };
+
+      const onMove = (e) => {
+        state.mouse.x = e.clientX;
+        state.mouse.y = e.clientY;
+        state.mouse.active = true;
+      };
+
+      const draw = () => {
+        ctx.clearRect(0, 0, state.w, state.h);
+        const nodes = state.nodes;
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          if (!prefersReducedMotion) {
+            n.x += n.vx;
+            n.y += n.vy;
+          }
+
+          if (n.x < -20) n.x = state.w + 20;
+          if (n.x > state.w + 20) n.x = -20;
+          if (n.y < -20) n.y = state.h + 20;
+          if (n.y > state.h + 20) n.y = -20;
+
+          if (state.mouse.active) {
+            const dxm = state.mouse.x - n.x;
+            const dym = state.mouse.y - n.y;
+            const dm = Math.hypot(dxm, dym);
+            if (dm < 130 && dm > 0.001) {
+              const pull = (130 - dm) / 130;
+              n.x -= (dxm / dm) * pull * 0.5;
+              n.y -= (dym / dm) * pull * 0.5;
+            }
+          }
+
+          for (let j = i + 1; j < nodes.length; j++) {
+            const m = nodes[j];
+            const dx = n.x - m.x;
+            const dy = n.y - m.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > state.maxDist) continue;
+            const alpha = 1 - dist / state.maxDist;
+            ctx.beginPath();
+            ctx.moveTo(n.x, n.y);
+            ctx.lineTo(m.x, m.y);
+            ctx.strokeStyle = `rgba(64,120,190,${0.12 * alpha})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+
+        for (const n of nodes) {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(31,89,160,0.48)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r + 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(110,164,226,0.08)";
+          ctx.fill();
+        }
+
+        requestAnimationFrame(draw);
+      };
+
+      resize();
+      window.addEventListener("resize", resize);
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("touchmove", (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const t = e.touches[0];
+        onMove({ clientX: t.clientX, clientY: t.clientY });
+      }, { passive: true });
+      window.addEventListener("mouseleave", () => { state.mouse.active = false; });
+      draw();
+    })();
+
     const addItem = (listId, tplId) => {
       const list = document.getElementById(listId);
       const tpl = document.getElementById(tplId);
