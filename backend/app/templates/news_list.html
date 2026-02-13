@@ -63,20 +63,20 @@
         <div class="news-search-card">
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <h1 class="m-0 h4 text-brand fw-bold">ニュース一覧</h1>
-            <span class="news-toolbar-note">共 {{ total_items }} 件 · 第 {{ page }} / {{ total_pages }} 页</span>
+            <span class="news-toolbar-note">全 {{ total_items }} 件 · {{ page }} / {{ total_pages }} ページ</span>
           </div>
           <form method="get" action="/news" class="row g-2">
             <div class="col-sm-7">
-              <input class="form-control" type="text" name="q" value="{{ keyword }}" placeholder="标题或正文关键字检索">
+              <input class="form-control" type="text" name="q" value="{{ keyword }}" placeholder="タイトルまたは本文で検索">
             </div>
             <div class="col-sm-3">
-              <select class="form-select" name="sort" title="排序方式" aria-label="排序方式">
-                <option value="latest" {% if sort == 'latest' %}selected{% endif %}>最新优先</option>
-                <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>最早优先</option>
+              <select class="form-select" name="sort" title="並び順" aria-label="並び順">
+                <option value="latest" {% if sort == 'latest' %}selected{% endif %}>新しい順</option>
+                <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>古い順</option>
               </select>
             </div>
             <div class="col-sm-2 d-grid">
-              <button class="btn btn-brand text-white" type="submit"><i class="bi bi-search"></i> 检索</button>
+              <button class="btn btn-brand text-white" type="submit"><i class="bi bi-search"></i> 検索</button>
             </div>
           </form>
         </div>
@@ -94,14 +94,14 @@
             </article>
           {% endfor %}
         {% else %}
-          <div class="news-item-card text-secondary">没有找到符合条件的新闻。</div>
+          <div class="news-item-card text-secondary">条件に一致するニュースは見つかりませんでした。</div>
         {% endif %}
 
         <div class="pagination-wrap">
           <nav aria-label="News pagination">
             <div class="pagination justify-content-center mb-0">
               <span class="page-item {% if page <= 1 %}disabled{% endif %}">
-                <a class="page-link" href="/news?q={{ keyword }}&sort={{ sort }}&page={{ page - 1 }}">上一页</a>
+                <a class="page-link" href="/news?q={{ keyword }}&sort={{ sort }}&page={{ page - 1 }}">前へ</a>
               </span>
               {% for n in page_numbers %}
                 <span class="page-item {% if n == page %}active{% endif %}">
@@ -109,7 +109,7 @@
                 </span>
               {% endfor %}
               <span class="page-item {% if page >= total_pages %}disabled{% endif %}">
-                <a class="page-link" href="/news?q={{ keyword }}&sort={{ sort }}&page={{ page + 1 }}">下一页</a>
+                <a class="page-link" href="/news?q={{ keyword }}&sort={{ sort }}&page={{ page + 1 }}">次へ</a>
               </span>
             </div>
           </nav>
