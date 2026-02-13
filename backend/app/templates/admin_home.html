@@ -1436,9 +1436,15 @@
           method: "POST",
           body: fd
         });
-        const data = await res.json();
+        const raw = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(raw);
+        } catch (_) {
+          data = null;
+        }
         if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
-          const msg = data?.detail || "上传失败，请稍后再试";
+          const msg = (data?.detail || raw || "上传失败，请稍后再试").toString().slice(0, 260);
           alert(msg);
           return;
         }
@@ -1450,8 +1456,9 @@
           const area = root.querySelector('textarea[name="services_detail_files"]');
           appendLines(area, data.items.map((item) => `${item.name || "文件"}|${item.url || ""}`));
         }
-      } catch (_) {
-        alert("上传失败，请稍后再试");
+      } catch (err) {
+        const message = (err?.message || "上传失败，请稍后再试").toString().slice(0, 260);
+        alert(message);
       } finally {
         input.disabled = false;
         input.value = "";

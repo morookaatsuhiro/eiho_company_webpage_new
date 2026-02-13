@@ -2,6 +2,7 @@
 后台管理视图：登录、登出、内容编辑
 """
 import json
+import os
 import shutil
 import uuid
 from pathlib import Path
@@ -300,10 +301,22 @@ def _save_local_service_upload(upload: UploadFile, kind: str) -> dict:
 def _store_service_upload(upload: UploadFile, kind: str) -> dict:
     if github_enabled():
         folder = "services/images" if kind == "image" else "services/files"
-        return {
-            "name": upload.filename or "文件",
-            "url": upload_to_github(upload, folder=folder),
-        }
+        try:
+            return {
+                "name": upload.filename or "文件",
+                "url": upload_to_github(upload, folder=folder),
+            }
+        except Exception as e:
+            if os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV"):
+                raise RuntimeError(
+                    "GitHub 上传失败，请检查 GITHUB_TOKEN/GITHUB_REPO/GITHUB_BRANCH/GITHUB_PUBLIC_BASE_URL 配置。"
+                ) from e
+            return _save_local_service_upload(upload, kind)
+
+    if os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV"):
+        raise RuntimeError(
+            "线上环境未配置 GitHub 上传参数，无法持久化文件。请配置 GITHUB_TOKEN 与 GITHUB_REPO。"
+        )
     return _save_local_service_upload(upload, kind)
 
 
@@ -366,7 +379,13 @@ def admin_upload_service_assets(
             content_type = (upload.content_type or "").lower()
             if not content_type.startswith("image/"):
                 continue
-        uploaded.append(_store_service_upload(upload, normalized_kind))
+        try:
+            uploaded.append(_store_service_upload(upload, normalized_kind))
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content={"detail": str(e) or "上传失败，请稍后再试"},
+            )
 
     if not uploaded:
         return JSONResponse(status_code=400, content={"detail": "No valid files uploaded"})
