@@ -226,6 +226,18 @@ section[id], header[id] { scroll-margin-top: 92px; }
   max-width: 48rem;
 }
 
+.message-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.message-link-btn {
+  border-radius: 999px;
+  padding: .5rem .95rem;
+  font-weight: 700;
+}
+
 .soft-bg {
   background:
     radial-gradient(1000px 450px at 15% 0%, rgba(39, 179, 255, .10), transparent 60%),
@@ -432,9 +444,104 @@ section[id], header[id] { scroll-margin-top: 92px; }
 .cta .small { color: rgba(255, 255, 255, .9); }
 .bg-brand-tint { background: rgba(15, 94, 166, .08); color: var(--brand-2); }
 
+/* ===== President Message Page ===== */
+.president-shell {
+  min-height: 100vh;
+  padding: 92px 0 72px;
+  background:
+    radial-gradient(1000px 450px at 15% 0%, rgba(39, 179, 255, .10), transparent 60%),
+    radial-gradient(900px 450px at 85% 10%, rgba(15, 94, 166, .10), transparent 55%),
+    linear-gradient(180deg, #f8fbff, #ffffff);
+}
+
+.president-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.president-back {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  text-decoration: none;
+  color: #5f6c7a;
+  font-weight: 700;
+}
+
+.president-back:hover { color: #0f5ea6; }
+
+.president-card {
+  margin-top: 14px;
+  border: 1px solid rgba(11, 59, 102, .12);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(11, 59, 102, .10);
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+
+.president-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.president-photo {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(11, 59, 102, .12);
+  background: #f5f8fd;
+}
+
+.president-photo img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.president-name {
+  margin: .2rem 0 .35rem;
+  color: #0b3b66;
+  font-weight: 900;
+  font-size: clamp(1.35rem, 2.1vw, 1.8rem);
+}
+
+.president-role {
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: .85rem;
+}
+
+.president-lead {
+  color: #3d4652;
+  line-height: 1.9;
+  margin: 0 0 .9rem;
+}
+
+.president-quote {
+  margin: 0 0 .9rem;
+  border: 1px solid rgba(15, 94, 166, .18);
+  border-radius: 12px;
+  background: rgba(15, 94, 166, .06);
+  color: #154b7d;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  padding: .72rem .85rem;
+}
+
+.president-points {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #3d4652;
+  line-height: 1.85;
+}
+
 /* Responsive */
 @media (max-width: 991px) {
   .hero-cards { grid-template-columns: 1fr; max-width: 28rem; }
   .news-list { grid-template-columns: 1fr; }
+  .president-grid { grid-template-columns: 1fr; }
+  .president-photo { max-width: 420px; }
   section { padding: 72px 0; }
 }

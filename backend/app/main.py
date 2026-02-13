@@ -47,6 +47,13 @@ if ENV_PATH.exists():
     load_dotenv(dotenv_path=str(ENV_PATH))
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+PRESIDENT_PHOTO_CANDIDATES = [
+    BASE_DIR / "images" / "president.jpg",
+    BASE_DIR / "images" / "president.png",
+    Path(
+        r"C:\Users\67529\.cursor\projects\d-code\assets\c__Users_67529_AppData_Roaming_Cursor_User_workspaceStorage_121f24ec3de4ad67872bf90d5ac28f05_images______20260207112929_11_383-3222ccca-d7ea-4f49-b7f8-e7461a91b7ec.png"
+    ),
+]
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
@@ -91,6 +98,35 @@ def serve_frontend():
     return FileResponse(str(html_path))
 
 
+@app.get("/president-message")
+def president_message_page():
+    """社长信息静态子页面"""
+    html_path = BASE_DIR / "president_message.html"
+    if not html_path.exists():
+        raise HTTPException(status_code=404, detail="President message page not found")
+    return FileResponse(str(html_path))
+
+
+@app.get("/president-photo")
+def president_photo():
+    """社长照片（优先项目内图片，兼容本地临时路径）"""
+    for candidate in PRESIDENT_PHOTO_CANDIDATES:
+        try:
+            if candidate.exists() and candidate.is_file():
+                return FileResponse(str(candidate))
+        except Exception:
+            continue
+    fallback_svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">'
+        '<rect width="800" height="1000" fill="#f1f5fb"/>'
+        '<circle cx="400" cy="360" r="140" fill="#d9e5f5"/>'
+        '<rect x="210" y="540" width="380" height="300" rx="38" fill="#d9e5f5"/>'
+        '<text x="400" y="900" text-anchor="middle" font-size="34" fill="#5d6d83">President Photo</text>'
+        "</svg>"
+    )
+    return Response(content=fallback_svg, media_type="image/svg+xml; charset=utf-8")
+
+
 def _site_url(request: Request) -> str:
     """优先使用环境变量 SITE_URL 作为站点主域名。"""
     env_url = (os.getenv("SITE_URL") or "").strip().rstrip("/")
@@ -117,6 +153,7 @@ def sitemap_xml(request: Request, db: Session = Depends(get_db)):
     urls: list[tuple[str, str]] = [
         (f"{site}/", now_iso),
         (f"{site}/news", now_iso),
+        (f"{site}/president-message", now_iso),
     ]
 
     # 已发布新闻详情页
