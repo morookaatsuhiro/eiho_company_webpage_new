@@ -206,6 +206,48 @@ def ensure_homepage_value_columns() -> None:
             )
 
 
+def ensure_homepage_president_columns() -> None:
+    """为 homepage 表补齐社长 message 字段。"""
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    if "homepage" not in table_names:
+        return
+
+    columns = {col["name"] for col in inspector.get_columns("homepage")}
+    required_columns = {
+        "president_message_label": "VARCHAR(100) DEFAULT 'President Message'",
+        "president_message_title": "VARCHAR(255) DEFAULT '社長メッセージ'",
+        "president_name": "VARCHAR(255) DEFAULT ''",
+        "president_role": "VARCHAR(255) DEFAULT '株式会社 衛宝（EIHO） 代表取締役'",
+        "president_message_body": "TEXT DEFAULT ''",
+        "president_message_quote": "TEXT DEFAULT ''",
+        "president_points_json": "TEXT DEFAULT '[]'",
+    }
+    missing = [name for name in required_columns if name not in columns]
+    if not missing:
+        return
+
+    is_sqlite = DATABASE_URL.startswith("sqlite")
+    is_postgres = DATABASE_URL.startswith("postgresql")
+
+    with engine.begin() as conn:
+        for name in missing:
+            definition = required_columns[name]
+            if is_postgres:
+                conn.exec_driver_sql(
+                    f"ALTER TABLE homepage ADD COLUMN IF NOT EXISTS {name} {definition}"
+                )
+                continue
+            if is_sqlite:
+                conn.exec_driver_sql(
+                    f"ALTER TABLE homepage ADD COLUMN {name} {definition}"
+                )
+                continue
+            conn.exec_driver_sql(
+                f"ALTER TABLE homepage ADD COLUMN {name} {definition}"
+            )
+
+
 def get_db():
     """数据库会话依赖注入"""
     db = SessionLocal()

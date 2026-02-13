@@ -62,6 +62,13 @@ class HomePublic(BaseModel):
     vision_body: str
     value_title: str
     value_body: str
+    president_message_label: str
+    president_message_title: str
+    president_name: str
+    president_role: str
+    president_message_body: str
+    president_message_quote: str
+    president_points: List[str]
 
     services_section_title: str
     services_section_subtitle: str
@@ -124,6 +131,13 @@ class HomeUpdate(BaseModel):
     vision_body: Optional[str] = None
     value_title: Optional[str] = None
     value_body: Optional[str] = None
+    president_message_label: Optional[str] = None
+    president_message_title: Optional[str] = None
+    president_name: Optional[str] = None
+    president_role: Optional[str] = None
+    president_message_body: Optional[str] = None
+    president_message_quote: Optional[str] = None
+    president_points: Optional[List[str]] = None
 
     services_section_title: Optional[str] = None
     services_section_subtitle: Optional[str] = None

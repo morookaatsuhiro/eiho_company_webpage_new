@@ -34,6 +34,12 @@ def get_or_create_home(db: Session) -> HomePage:
             vision_body="「品質と情熱」で、日中カーライフの架け橋となるグローバル・パートナーへ。",
             value_title="Value",
             value_body="誠実な取引と透明な品質基準を軸に、長期的な信頼関係を積み重ねます。",
+            president_message_label="President Message",
+            president_message_title="社長メッセージ",
+            president_name="",
+            president_role="株式会社 衛宝（EIHO） 代表取締役",
+            president_message_body="当社は、日中の自動車用品ビジネスにおいて「品質」「誠実」「継続」を経営の軸に据え、お客様・取引先・社会にとって価値のあるパートナーであり続けることを目指しています。",
+            president_message_quote="「単に商品を届けるのではなく、安心して選べる基準を届ける」。これが私たちの変わらない姿勢です。",
             services_section_title="事業内容（Our Services）",
             services_section_subtitle="輸入・輸出・OEM/コンサルまで、日中ビジネスをトータルに支援します。",
             strengths_section_title="当社の強み（Why Choose Us?）",
@@ -141,6 +147,11 @@ def get_or_create_home(db: Session) -> HomePage:
             {"label": "事業内容", "value": home.business_desc},
             {"label": "主要取引先", "value": home.clients},
         ], ensure_ascii=False)
+        home.president_points_json = json.dumps([
+            "日本市場基準に沿った品質管理と、現地ネットワークの強みを両立",
+            "小ロットからOEM開発まで、実務に強い柔軟な対応体制",
+            "長期的な信頼関係を重視し、透明性の高い取引を徹底",
+        ], ensure_ascii=False)
 
         db.add(home)
         db.commit()
@@ -185,6 +196,11 @@ def update_home(db: Session, payload: HomeUpdate) -> HomePage:
                 home.profile_rows_json = json.dumps(v, ensure_ascii=False)
             except Exception as e:
                 raise ValueError(f"Invalid profile rows data: {e}")
+        elif k == "president_points" and v is not None:
+            try:
+                home.president_points_json = json.dumps(v, ensure_ascii=False)
+            except Exception as e:
+                raise ValueError(f"Invalid president points data: {e}")
         else:
             setattr(home, k, v)
 

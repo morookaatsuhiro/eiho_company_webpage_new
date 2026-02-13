@@ -442,6 +442,7 @@ def admin_home(
             "strengths": _parse_strengths(home.strengths_json or "[]"),
             "hero_stats": _parse_hero_stats(home.hero_stats_json or "[]"),
             "concept_points": _parse_concept_points(home.concept_points_json or "[]"),
+            "president_points": _parse_contact_examples(getattr(home, "president_points_json", "[]") or "[]"),
             "contact_examples": _parse_contact_examples(home.contact_examples_json or "[]"),
             "profile_rows": _parse_profile_rows(getattr(home, "profile_rows_json", "[]"), home),
             "news_items": raw_news_items,
@@ -495,6 +496,13 @@ def admin_save(
     vision_body: str = Form(""),
     value_title: str = Form(""),
     value_body: str = Form(""),
+    president_message_label: str = Form(""),
+    president_message_title: str = Form(""),
+    president_name: str = Form(""),
+    president_role: str = Form(""),
+    president_message_body: str = Form(""),
+    president_message_quote: str = Form(""),
+    president_point_text: List[str] = Form([]),
     services_section_title: str = Form(""),
     services_section_subtitle: str = Form(""),
     strengths_section_title: str = Form(""),
@@ -669,6 +677,7 @@ def admin_save(
     strengths_list = _build_items(strengths_title, strengths_body, strengths_icon, StrengthItem)
     hero_stats_list = _build_hero_stats(hero_stat_value, hero_stat_suffix, hero_stat_label)
     concept_points_list = _build_concept_points(concept_point_label, concept_point_body)
+    president_points_list = _build_simple_list(president_point_text)
     contact_examples_list = _build_simple_list(contact_example_text)
     profile_rows_list = _build_profile_rows(profile_row_label, profile_row_value)
     company_name_from_rows = _pick_profile_row_value(profile_rows_list, ["名称", "公司名称", "会社名"])
@@ -705,6 +714,13 @@ def admin_save(
             vision_body=_clean(vision_body),
             value_title=_clean(value_title),
             value_body=_clean(value_body),
+            president_message_label=_clean(president_message_label),
+            president_message_title=_clean(president_message_title),
+            president_name=_clean(president_name),
+            president_role=_clean(president_role),
+            president_message_body=_clean(president_message_body),
+            president_message_quote=_clean(president_message_quote),
+            president_points=president_points_list,
             services_section_title=_clean(services_section_title),
             services_section_subtitle=_clean(services_section_subtitle),
             strengths_section_title=_clean(strengths_section_title),

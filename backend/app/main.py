@@ -24,6 +24,7 @@ from .db import (
     ensure_news_asset_columns,
     ensure_homepage_profile_rows_column,
     ensure_homepage_value_columns,
+    ensure_homepage_president_columns,
 )
 from .crud import (
     get_or_create_home,
@@ -61,6 +62,7 @@ ensure_homepage_nav_columns()
 ensure_news_asset_columns()
 ensure_homepage_profile_rows_column()
 ensure_homepage_value_columns()
+ensure_homepage_president_columns()
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -98,13 +100,34 @@ def serve_frontend():
     return FileResponse(str(html_path))
 
 
-@app.get("/president-message")
-def president_message_page():
-    """社长信息静态子页面"""
-    html_path = BASE_DIR / "president_message.html"
-    if not html_path.exists():
-        raise HTTPException(status_code=404, detail="President message page not found")
-    return FileResponse(str(html_path))
+@app.get("/president-message", response_class=HTMLResponse)
+def president_message_page(request: Request, db: Session = Depends(get_db)):
+    """社长 message 页面（支持后台配置）"""
+    home = get_or_create_home(db)
+    try:
+        raw = json.loads(getattr(home, "president_points_json", "[]") or "[]")
+    except Exception:
+        raw = []
+    points = [str(item).strip() for item in raw if str(item).strip()] if isinstance(raw, list) else []
+    if not points:
+        points = [
+            "日本市場基準に沿った品質管理と、現地ネットワークの強みを両立",
+            "小ロットからOEM開発まで、実務に強い柔軟な対応体制",
+            "長期的な信頼関係を重視し、透明性の高い取引を徹底",
+        ]
+    return templates.TemplateResponse(
+        "president_message.html",
+        {
+            "request": request,
+            "label": getattr(home, "president_message_label", "") or "President Message",
+            "title": getattr(home, "president_message_title", "") or "社長メッセージ",
+            "name": getattr(home, "president_name", "") or "",
+            "role": getattr(home, "president_role", "") or "株式会社 衛宝（EIHO） 代表取締役",
+            "body": getattr(home, "president_message_body", "") or "",
+            "quote": getattr(home, "president_message_quote", "") or "",
+            "points": points,
+        },
+    )
 
 
 @app.get("/president-photo")
@@ -221,6 +244,15 @@ def public_home(db: Session = Depends(get_db)):
                 {"label": "事業内容", "value": home.business_desc or ""},
                 {"label": "主要取引先", "value": home.clients or ""},
             ]
+        try:
+            president_points_raw = json.loads(getattr(home, "president_points_json", "[]") or "[]")
+        except Exception:
+            president_points_raw = []
+        president_points = [
+            str(item).strip()
+            for item in president_points_raw
+            if isinstance(item, str) and str(item).strip()
+        ] if isinstance(president_points_raw, list) else []
         return HomePublic(
             nav_brand_text=home.nav_brand_text or "",
             nav_top_text=home.nav_top_text or "",
@@ -246,6 +278,13 @@ def public_home(db: Session = Depends(get_db)):
             vision_body=home.vision_body or "",
             value_title=home.value_title or "",
             value_body=home.value_body or "",
+            president_message_label=getattr(home, "president_message_label", "") or "President Message",
+            president_message_title=getattr(home, "president_message_title", "") or "社長メッセージ",
+            president_name=getattr(home, "president_name", "") or "",
+            president_role=getattr(home, "president_role", "") or "",
+            president_message_body=getattr(home, "president_message_body", "") or "",
+            president_message_quote=getattr(home, "president_message_quote", "") or "",
+            president_points=president_points,
             services_section_title=home.services_section_title or "",
             services_section_subtitle=home.services_section_subtitle or "",
             strengths_section_title=home.strengths_section_title or "",

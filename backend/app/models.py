@@ -36,6 +36,13 @@ class HomePage(Base):
     vision_body = Column(Text, default="")
     value_title = Column(String(100), default="Value")
     value_body = Column(Text, default="")
+    president_message_label = Column(String(100), default="President Message")
+    president_message_title = Column(String(255), default="社長メッセージ")
+    president_name = Column(String(255), default="")
+    president_role = Column(String(255), default="株式会社 衛宝（EIHO） 代表取締役")
+    president_message_body = Column(Text, default="")
+    president_message_quote = Column(Text, default="")
+    president_points_json = Column(Text, default="[]")
 
     # Section headings
     services_section_title = Column("services_title", String(255), default="事業内容（Our Services）")

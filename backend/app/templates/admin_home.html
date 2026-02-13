@@ -595,6 +595,66 @@
               <label for="value_body">Value 内容</label>
               <textarea id="value_body" name="value_body">{{ home.value_body or '' }}</textarea>
             </div>
+            <div>
+              <label for="president_message_label">社長メッセージ 标签</label>
+              <input id="president_message_label" name="president_message_label" value="{{ home.president_message_label or 'President Message' }}" placeholder="President Message">
+            </div>
+            <div>
+              <label for="president_message_title">社長メッセージ 标题</label>
+              <input id="president_message_title" name="president_message_title" value="{{ home.president_message_title or '社長メッセージ' }}" placeholder="社長メッセージ">
+            </div>
+            <div>
+              <label for="president_name">社長姓名（可选）</label>
+              <input id="president_name" name="president_name" value="{{ home.president_name or '' }}" placeholder="例：山田 太郎">
+            </div>
+            <div>
+              <label for="president_role">社長职位</label>
+              <input id="president_role" name="president_role" value="{{ home.president_role or '' }}" placeholder="株式会社 衛宝（EIHO） 代表取締役">
+            </div>
+            <div class="full">
+              <label for="president_message_body">社長メッセージ 正文</label>
+              <textarea id="president_message_body" name="president_message_body">{{ home.president_message_body or '' }}</textarea>
+            </div>
+            <div class="full">
+              <label for="president_message_quote">社長メッセージ 强调语（Quote）</label>
+              <textarea id="president_message_quote" name="president_message_quote">{{ home.president_message_quote or '' }}</textarea>
+            </div>
+            <div class="full">
+              <h4>社長メッセージ要点（可多条）</h4>
+              <div class="hint">每条将显示为列表要点。</div>
+              <div id="presidentPointsList">
+                {% if president_points and president_points|length > 0 %}
+                  {% for p in president_points %}
+                    <div class="item-row">
+                      <div class="item-fields one">
+                        <div>
+                          <label>要点</label>
+                          <input name="president_point_text" value="{{ p }}" placeholder="例如：長期的な信頼関係を重視">
+                        </div>
+                      </div>
+                      <div class="item-actions">
+                        <button type="button" class="btn btn-danger" data-remove>删除</button>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="item-row">
+                    <div class="item-fields one">
+                      <div>
+                        <label>要点</label>
+                        <input name="president_point_text" value="" placeholder="例如：長期的な信頼関係を重視">
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <button type="button" class="btn btn-danger" data-remove>删除</button>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="item-actions">
+                <button type="button" class="btn btn-outline" data-add-president-point>+ 添加要点</button>
+              </div>
+            </div>
           </div>
         </div>
       </details>
@@ -1282,6 +1342,20 @@
     </div>
   </template>
 
+  <template id="presidentPointTpl">
+    <div class="item-row">
+      <div class="item-fields one">
+        <div>
+          <label>要点</label>
+          <input name="president_point_text" value="" placeholder="例如：長期的な信頼関係を重視">
+        </div>
+      </div>
+      <div class="item-actions">
+        <button type="button" class="btn btn-danger" data-remove>删除</button>
+      </div>
+    </div>
+  </template>
+
   <template id="contactExampleTpl">
     <div class="item-row">
       <div class="item-fields one">
@@ -1684,6 +1758,9 @@
       }
       if (el.closest("[data-add-concept-point]")) {
         addItem("conceptPointsList", "conceptPointTpl");
+      }
+      if (el.closest("[data-add-president-point]")) {
+        addItem("presidentPointsList", "presidentPointTpl");
       }
       if (el.closest("[data-add-contact-example]")) {
         addItem("contactExamplesList", "contactExampleTpl");

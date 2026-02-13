@@ -532,9 +532,19 @@ section[id], header[id] { scroll-margin-top: 92px; }
 
 .president-points {
   margin: 0;
-  padding-left: 1.2rem;
   color: #3d4652;
   line-height: 1.85;
+}
+
+.president-point-item {
+  margin: 0;
+}
+
+.president-point-item::before {
+  content: "• ";
+  color: #0f5ea6;
+  font-weight: 900;
+  margin-right: .15rem;
 }
 
 /* Responsive */
