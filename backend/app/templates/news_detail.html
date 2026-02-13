@@ -92,14 +92,18 @@
 
     .news-detail-media {
       margin-top: .4rem;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(11, 59, 102, .10);
+      background: #f7fbff;
     }
 
     .news-detail-image {
       width: 100%;
-      max-height: 430px;
+      max-height: 520px;
       object-fit: cover;
-      border-radius: 16px;
-      border: 1px solid rgba(11, 59, 102, .10);
+      border-radius: 0;
+      border: 0;
       cursor: zoom-in;
       transition: transform .2s ease, box-shadow .2s ease;
     }
@@ -116,12 +120,105 @@
       gap: .75rem;
     }
 
-    .news-detail-body {
+    .news-content {
       margin-top: 1.05rem;
+      display: grid;
+      gap: .9rem;
+    }
+
+    .news-detail-body {
+      margin: 0;
       line-height: 1.9;
       color: #3d4652;
       white-space: pre-wrap;
       word-break: break-word;
+    }
+    .news-detail-heading {
+      margin: .2rem 0 0;
+      padding-left: .65rem;
+      border-left: 4px solid #0f5ea6;
+      color: #0b3b66;
+      font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+      line-height: 1.5;
+      font-weight: 900;
+    }
+    .news-detail-note {
+      margin: 0;
+      border: 1px solid rgba(15, 94, 166, .2);
+      border-radius: 12px;
+      background: rgba(15, 94, 166, .06);
+      color: #154b7d;
+      line-height: 1.85;
+      white-space: pre-wrap;
+      padding: .72rem .85rem;
+    }
+    .news-detail-list {
+      margin: 0;
+      color: #3d4652;
+      line-height: 1.85;
+      display: grid;
+      gap: .25rem;
+    }
+    .news-detail-list-item { margin: 0; }
+    .news-detail-list.unordered .news-detail-list-item::before {
+      content: "• ";
+      color: #0f5ea6;
+      font-weight: 900;
+      margin-right: .15rem;
+    }
+    .news-detail-list.ordered { counter-reset: step; }
+    .news-detail-list.ordered .news-detail-list-item { counter-increment: step; }
+    .news-detail-list.ordered .news-detail-list-item::before {
+      content: counter(step) ". ";
+      color: #0f5ea6;
+      font-weight: 900;
+      margin-right: .15rem;
+    }
+    .news-inline-media {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(11, 59, 102, .10);
+      background: #f7fbff;
+      width: 100%;
+    }
+    .news-inline-media.layout-full { max-width: 100%; }
+    .news-inline-media.layout-left {
+      max-width: min(62%, 520px);
+      margin-right: auto;
+    }
+    .news-inline-media.layout-right {
+      max-width: min(62%, 520px);
+      margin-left: auto;
+    }
+    .news-inline-media .news-detail-image {
+      max-height: 520px;
+      object-fit: contain;
+      transition: none;
+      box-shadow: none;
+      background: #eef4fb;
+    }
+    .news-inline-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .9rem;
+      align-items: stretch;
+    }
+    .news-inline-row .news-inline-media {
+      max-width: 100%;
+      margin: 0;
+      aspect-ratio: 16 / 10;
+    }
+    .news-inline-row .news-inline-media .news-detail-image {
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      object-fit: cover;
+      transition: transform .22s ease, box-shadow .22s ease;
+      background: #f3f7fc;
+    }
+    .news-inline-row .news-inline-media .news-detail-image:hover {
+      transform: scale(1.015);
+      box-shadow: 0 10px 24px rgba(11, 59, 102, .16);
     }
 
     .news-detail-actions {
@@ -199,6 +296,14 @@
     }
     @media (max-width: 768px) {
       .news-detail-gallery { grid-template-columns: 1fr; }
+      .news-inline-media.layout-left,
+      .news-inline-media.layout-right {
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+      }
+      .news-inline-row { grid-template-columns: 1fr; }
+      .news-inline-row .news-inline-media { aspect-ratio: 4 / 3; }
     }
   </style>
 </head>
@@ -221,14 +326,52 @@
             <h1 class="news-detail-title">{{ news.title }}</h1>
           </header>
 
-          {% if news_images and news_images|length > 0 %}
-            {% if news_images|length == 1 %}
+          <div class="news-content">
+            {% for block in news_content_blocks or [] %}
+              {% if block.type == "text" %}
+                <p class="news-detail-body">{{ block.value }}</p>
+              {% elif block.type == "heading" %}
+                <h2 class="news-detail-heading">{{ block.value }}</h2>
+              {% elif block.type == "note" %}
+                <p class="news-detail-note">{{ block.value }}</p>
+              {% elif block.type == "list" %}
+                {% if block.ordered %}
+                  <div class="news-detail-list ordered">
+                    {% for li in block.list_items %}
+                      <p class="news-detail-list-item">{{ li }}</p>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <div class="news-detail-list unordered">
+                    {% for li in block.list_items %}
+                      <p class="news-detail-list-item">{{ li }}</p>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              {% elif block.type == "image_row" %}
+                <div class="news-inline-row">
+                  {% for row_img in block.row_images %}
+                    <div class="news-inline-media layout-{{ row_img.layout or 'full' }}">
+                      <img src="{{ row_img.url }}" alt="{{ news.title }} image row {{ loop.index }}" class="news-detail-image">
+                    </div>
+                  {% endfor %}
+                </div>
+              {% elif block.type == "image" %}
+                <div class="news-inline-media layout-{{ block.layout or 'full' }}">
+                  <img src="{{ block.url }}" alt="{{ news.title }} image inline {{ loop.index }}" class="news-detail-image">
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          {% if news_images_remaining and news_images_remaining|length > 0 %}
+            {% if news_images_remaining|length == 1 %}
               <div class="news-detail-media">
-                <img src="{{ news_images[0] }}" alt="{{ news.title }}" class="news-detail-image">
+                <img src="{{ news_images_remaining[0] }}" alt="{{ news.title }}" class="news-detail-image">
               </div>
             {% else %}
               <div class="news-detail-gallery">
-                {% for image in news_images %}
+                {% for image in news_images_remaining %}
                   <div class="news-detail-media">
                     <img src="{{ image }}" alt="{{ news.title }} {{ loop.index }}" class="news-detail-image">
                   </div>
@@ -236,8 +379,6 @@
               </div>
             {% endif %}
           {% endif %}
-
-          <div class="news-detail-body">{{ news.body }}</div>
 
           {% if news_files and news_files|length > 0 %}
             <div class="news-files-block">

@@ -60,11 +60,93 @@
       line-height: 1.35;
       font-size: clamp(1.45rem, 2.1vw, 1.95rem);
     }
+    .service-content {
+      margin-top: .35rem;
+      display: grid;
+      gap: .9rem;
+    }
     .service-body {
       color: #3d4652;
       line-height: 1.85;
       white-space: pre-wrap;
       word-break: break-word;
+      margin: 0;
+    }
+    .service-heading {
+      margin: .2rem 0 0;
+      padding-left: .65rem;
+      border-left: 4px solid #0f5ea6;
+      color: #0b3b66;
+      font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+      line-height: 1.5;
+      font-weight: 900;
+    }
+    .service-note {
+      margin: 0;
+      border: 1px solid rgba(15, 94, 166, .2);
+      border-radius: 12px;
+      background: rgba(15, 94, 166, .06);
+      color: #154b7d;
+      line-height: 1.85;
+      white-space: pre-wrap;
+      padding: .72rem .85rem;
+    }
+    .service-list {
+      margin: 0;
+      color: #3d4652;
+      line-height: 1.85;
+      display: grid;
+      gap: .25rem;
+    }
+    .service-list-item { margin: 0; }
+    .service-list.unordered .service-list-item::before {
+      content: "• ";
+      color: #0f5ea6;
+      font-weight: 900;
+      margin-right: .15rem;
+    }
+    .service-list.ordered { counter-reset: step; }
+    .service-list.ordered .service-list-item { counter-increment: step; }
+    .service-list.ordered .service-list-item::before {
+      content: counter(step) ". ";
+      color: #0f5ea6;
+      font-weight: 900;
+      margin-right: .15rem;
+    }
+    .service-inline-media {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(11, 59, 102, .10);
+      background: #f7fbff;
+      width: 100%;
+    }
+    .service-inline-media.layout-full { max-width: 100%; }
+    .service-inline-media.layout-left {
+      max-width: min(62%, 520px);
+      margin-right: auto;
+    }
+    .service-inline-media.layout-right {
+      max-width: min(62%, 520px);
+      margin-left: auto;
+    }
+    .service-inline-media img {
+      width: 100%;
+      max-height: 520px;
+      object-fit: contain;
+      display: block;
+      cursor: zoom-in;
+      background: #eef4fb;
+    }
+    .service-inline-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .9rem;
+      align-items: stretch;
+    }
+    .service-inline-row .service-inline-media {
+      max-width: 100%;
+      margin: 0;
+      aspect-ratio: 16 / 10;
     }
     .service-media-grid {
       margin-top: 1rem;
@@ -89,6 +171,26 @@
     .service-media-item img:hover {
       transform: translateY(-1px);
       box-shadow: 0 12px 28px rgba(11, 59, 102, .16);
+    }
+    .service-inline-media.service-media-item img {
+      height: auto;
+      max-height: 520px;
+      object-fit: contain;
+      transition: none;
+      box-shadow: none;
+    }
+    .service-inline-row .service-inline-media.service-media-item img {
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      object-fit: cover;
+      transition: transform .22s ease, box-shadow .22s ease;
+      box-shadow: none;
+      background: #f3f7fc;
+    }
+    .service-inline-row .service-inline-media.service-media-item img:hover {
+      transform: scale(1.015);
+      box-shadow: 0 10px 24px rgba(11, 59, 102, .16);
     }
     .service-files {
       margin-top: 1.2rem;
@@ -159,6 +261,14 @@
     @media (max-width: 768px) {
       .service-media-grid { grid-template-columns: 1fr; }
       .service-media-item img { height: 200px; }
+      .service-inline-media.layout-left,
+      .service-inline-media.layout-right {
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+      }
+      .service-inline-row { grid-template-columns: 1fr; }
+      .service-inline-row .service-inline-media { aspect-ratio: 4 / 3; }
     }
   </style>
 </head>
@@ -173,11 +283,47 @@
         <article class="service-detail-card">
           <span class="service-tag"><i class="bi bi-grid"></i> SERVICE {{ service_index + 1 }}</span>
           <h1 class="service-title">{{ service.title }}</h1>
-          <div class="service-body">{{ service.detail_body or service.body }}</div>
+          <div class="service-content">
+            {% for block in service.content_blocks %}
+              {% if block.type == "text" %}
+                <p class="service-body">{{ block.value }}</p>
+              {% elif block.type == "heading" %}
+                <h2 class="service-heading">{{ block.value }}</h2>
+              {% elif block.type == "note" %}
+                <p class="service-note">{{ block.value }}</p>
+              {% elif block.type == "list" %}
+                {% if block.ordered %}
+                  <div class="service-list ordered">
+                    {% for li in block.list_items %}
+                      <p class="service-list-item">{{ li }}</p>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <div class="service-list unordered">
+                    {% for li in block.list_items %}
+                      <p class="service-list-item">{{ li }}</p>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              {% elif block.type == "image_row" %}
+                <div class="service-inline-row">
+                  {% for row_img in block.row_images %}
+                    <div class="service-inline-media service-media-item layout-{{ row_img.layout or 'full' }}">
+                      <img src="{{ row_img.url }}" alt="{{ service.title }} image row {{ loop.index }}">
+                    </div>
+                  {% endfor %}
+                </div>
+              {% elif block.type == "image" %}
+                <div class="service-inline-media service-media-item layout-{{ block.layout or 'full' }}">
+                  <img src="{{ block.url }}" alt="{{ service.title }} image inline {{ loop.index }}">
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
 
-          {% if service.detail_images and service.detail_images|length > 0 %}
+          {% if service.detail_images_remaining and service.detail_images_remaining|length > 0 %}
             <div class="service-media-grid">
-              {% for image in service.detail_images %}
+              {% for image in service.detail_images_remaining %}
                 <div class="service-media-item">
                   <img src="{{ image }}" alt="{{ service.title }} image {{ loop.index }}">
                 </div>

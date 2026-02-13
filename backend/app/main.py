@@ -4,6 +4,7 @@ FastAPI 主应用：路由、中间件、静态文件托管
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
@@ -379,9 +380,120 @@ def news_detail(news_id: int, request: Request, db: Session = Depends(get_db)):
     if not file_list and item.file_path:
         file_list = [{"name": "附件", "url": item.file_path}]
 
+    def _build_news_content_blocks(body: str, images: list[str]) -> tuple[list[dict], list[str]]:
+        text = str(body or "").replace("\r\n", "\n")
+        pattern = re.compile(
+            r"\{\{img:(\d+)(?:\|(left|right|full))?\}\}"
+            r"|\[img:(\d+)(?:\|(left|right|full))?\]"
+            r"|\[h2\](.*?)\[/h2\]"
+            r"|\[note\](.*?)\[/note\]"
+            r"|\[ul\](.*?)\[/ul\]"
+            r"|\[ol\](.*?)\[/ol\]",
+            re.IGNORECASE | re.DOTALL,
+        )
+        blocks: list[dict] = []
+        used_indexes: set[int] = set()
+        cursor = 0
+
+        for m in pattern.finditer(text):
+            before = text[cursor:m.start()]
+            if before.strip():
+                blocks.append({"type": "text", "value": before.strip()})
+
+            idx_raw = m.group(1) or m.group(3)
+            if idx_raw is not None:
+                layout_raw = (m.group(2) or m.group(4) or "full").strip().lower()
+                layout = layout_raw if layout_raw in {"left", "right", "full"} else "full"
+                try:
+                    img_index = int(idx_raw) - 1
+                except Exception:
+                    img_index = -1
+                if 0 <= img_index < len(images):
+                    blocks.append({"type": "image", "url": images[img_index], "layout": layout})
+                    used_indexes.add(img_index)
+                cursor = m.end()
+                continue
+
+            h2_raw = m.group(5)
+            if h2_raw is not None:
+                title = h2_raw.strip()
+                if title:
+                    blocks.append({"type": "heading", "value": title})
+                cursor = m.end()
+                continue
+
+            note_raw = m.group(6)
+            if note_raw is not None:
+                note_val = note_raw.strip()
+                if note_val:
+                    blocks.append({"type": "note", "value": note_val})
+                cursor = m.end()
+                continue
+
+            ul_raw = m.group(7)
+            if ul_raw is not None:
+                items = [x.strip() for x in ul_raw.split("|") if x.strip()]
+                if items:
+                    blocks.append({"type": "list", "ordered": False, "list_items": items})
+                cursor = m.end()
+                continue
+
+            ol_raw = m.group(8)
+            if ol_raw is not None:
+                items = [x.strip() for x in ol_raw.split("|") if x.strip()]
+                if items:
+                    blocks.append({"type": "list", "ordered": True, "list_items": items})
+                cursor = m.end()
+                continue
+
+            cursor = m.end()
+
+        tail = text[cursor:]
+        if tail.strip():
+            blocks.append({"type": "text", "value": tail.strip()})
+
+        compact_blocks: list[dict] = []
+        i = 0
+        while i < len(blocks):
+            block = blocks[i]
+            is_side_image = (
+                block.get("type") == "image"
+                and block.get("layout") in {"left", "right"}
+            )
+            if not is_side_image:
+                compact_blocks.append(block)
+                i += 1
+                continue
+
+            row_images = [block]
+            j = i + 1
+            while j < len(blocks):
+                nxt = blocks[j]
+                if nxt.get("type") == "image" and nxt.get("layout") in {"left", "right"}:
+                    row_images.append(nxt)
+                    j += 1
+                else:
+                    break
+            compact_blocks.append({"type": "image_row", "row_images": row_images})
+            i = j
+
+        remaining_images = [url for idx, url in enumerate(images) if idx not in used_indexes]
+        return compact_blocks, remaining_images
+
+    content_blocks, remaining_images = _build_news_content_blocks(str(item.body or ""), image_list)
+    if not content_blocks and str(item.body or "").strip():
+        content_blocks = [{"type": "text", "value": str(item.body or "").strip()}]
+
     return templates.TemplateResponse(
         "news_detail.html",
-        {"request": request, "news": item, "news_images": image_list, "news_files": file_list}
+        {
+            "request": request,
+            "news": item,
+            "news_images": image_list,
+            "news_files": file_list,
+            "news_content_blocks": content_blocks,
+            "news_images_remaining": remaining_images,
+        }
     )
 
 
@@ -473,12 +585,126 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
             if file_url:
                 detail_files.append({"name": file_name or "文件", "url": file_url})
 
+    def _build_service_content_blocks(detail_body: str, images: list[str]) -> tuple[list[dict], list[str]]:
+        """
+        按正文中的图片标记渲染内容块。
+        支持标记格式：
+        - [img:1]
+        - {{img:1}}
+        其中数字对应「详情页图片」列表中的第 N 张（1 开始）。
+        """
+        text = str(detail_body or "").replace("\r\n", "\n")
+        pattern = re.compile(
+            r"\{\{img:(\d+)(?:\|(left|right|full))?\}\}"
+            r"|\[img:(\d+)(?:\|(left|right|full))?\]"
+            r"|\[h2\](.*?)\[/h2\]"
+            r"|\[note\](.*?)\[/note\]"
+            r"|\[ul\](.*?)\[/ul\]"
+            r"|\[ol\](.*?)\[/ol\]",
+            re.IGNORECASE | re.DOTALL,
+        )
+        blocks: list[dict] = []
+        used_indexes: set[int] = set()
+        cursor = 0
+        for m in pattern.finditer(text):
+            before = text[cursor:m.start()]
+            if before.strip():
+                blocks.append({"type": "text", "value": before.strip()})
+
+            idx_raw = m.group(1) or m.group(3)
+            if idx_raw is not None:
+                layout_raw = (m.group(2) or m.group(4) or "full").strip().lower()
+                layout = layout_raw if layout_raw in {"left", "right", "full"} else "full"
+                try:
+                    img_index = int(idx_raw) - 1
+                except Exception:
+                    img_index = -1
+                if 0 <= img_index < len(images):
+                    blocks.append({"type": "image", "url": images[img_index], "layout": layout})
+                    used_indexes.add(img_index)
+                cursor = m.end()
+                continue
+
+            h2_raw = m.group(5)
+            if h2_raw is not None:
+                title = h2_raw.strip()
+                if title:
+                    blocks.append({"type": "heading", "value": title})
+                cursor = m.end()
+                continue
+
+            note_raw = m.group(6)
+            if note_raw is not None:
+                note_val = note_raw.strip()
+                if note_val:
+                    blocks.append({"type": "note", "value": note_val})
+                cursor = m.end()
+                continue
+
+            ul_raw = m.group(7)
+            if ul_raw is not None:
+                items = [x.strip() for x in ul_raw.split("|") if x.strip()]
+                if items:
+                    blocks.append({"type": "list", "ordered": False, "list_items": items})
+                cursor = m.end()
+                continue
+
+            ol_raw = m.group(8)
+            if ol_raw is not None:
+                items = [x.strip() for x in ol_raw.split("|") if x.strip()]
+                if items:
+                    blocks.append({"type": "list", "ordered": True, "list_items": items})
+                cursor = m.end()
+                continue
+
+            cursor = m.end()
+        tail = text[cursor:]
+        if tail.strip():
+            blocks.append({"type": "text", "value": tail.strip()})
+
+        compact_blocks: list[dict] = []
+        i = 0
+        while i < len(blocks):
+            block = blocks[i]
+            is_side_image = (
+                block.get("type") == "image"
+                and block.get("layout") in {"left", "right"}
+            )
+            if not is_side_image:
+                compact_blocks.append(block)
+                i += 1
+                continue
+
+            row_items = [block]
+            j = i + 1
+            while j < len(blocks):
+                nxt = blocks[j]
+                if nxt.get("type") == "image" and nxt.get("layout") in {"left", "right"}:
+                    row_items.append(nxt)
+                    j += 1
+                else:
+                    break
+            compact_blocks.append({"type": "image_row", "row_images": row_items})
+            i = j
+
+        remaining_images = [url for i, url in enumerate(images) if i not in used_indexes]
+        return compact_blocks, remaining_images
+
+    content_blocks, remaining_images = _build_service_content_blocks(
+        str(raw.get("detail_body") or ""),
+        detail_images,
+    )
+    if not content_blocks and str(raw.get("body") or "").strip():
+        content_blocks = [{"type": "text", "value": str(raw.get("body") or "").strip()}]
+
     service = {
         "title": str(raw.get("title") or ""),
         "body": str(raw.get("body") or ""),
         "detail_body": str(raw.get("detail_body") or ""),
         "detail_images": detail_images,
+        "detail_images_remaining": remaining_images,
         "detail_files": detail_files,
+        "content_blocks": content_blocks,
     }
     return templates.TemplateResponse(
         "service_detail.html",

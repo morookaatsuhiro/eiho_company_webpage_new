@@ -210,6 +210,68 @@
     .news-create-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;}
     .news-main-fields{display:grid;grid-template-columns:1fr;gap:12px;}
     .news-side-panel{display:grid;grid-template-columns:1fr;gap:10px;align-content:start;}
+    .news-editor-tools{
+      margin-top:6px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      justify-content:flex-start;
+    }
+    .news-editor-tools .btn{padding:5px 9px;font-weight:700;}
+    .news-preview{
+      margin-top:8px;
+      border:1px solid #dce6f6;
+      border-radius:12px;
+      background:#f9fbff;
+      padding:10px;
+    }
+    .news-preview-title{
+      margin:0 0 6px;
+      font-size:12px;
+      color:#4f6078;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .news-preview-box{
+      border:1px dashed #cad8ec;
+      border-radius:10px;
+      background:#fff;
+      padding:10px;
+      min-height:62px;
+      display:grid;
+      gap:8px;
+      color:#344054;
+      font-size:13px;
+      line-height:1.75;
+    }
+    .news-preview-empty{color:#94a3b8;}
+    .news-preview-h2{
+      margin:0;
+      font-size:14px;
+      font-weight:800;
+      color:#0b3b66;
+      border-left:3px solid #0f5ea6;
+      padding-left:8px;
+    }
+    .news-preview-note{
+      border:1px solid rgba(15,94,166,.2);
+      background:rgba(15,94,166,.06);
+      color:#154b7d;
+      border-radius:8px;
+      padding:8px;
+      margin:0;
+      white-space:pre-wrap;
+    }
+    .news-preview-list{margin:0;padding-left:18px;display:grid;gap:4px;}
+    .news-preview-img{
+      border:1px solid #d7e3f5;
+      border-radius:8px;
+      background:linear-gradient(180deg,#f8fbff,#eef4fb);
+      color:#4a5f7c;
+      padding:8px;
+      font-size:12px;
+      font-weight:700;
+    }
     .news-upload-card{
       border:1px solid #dbe5f3;
       border-radius:10px;
@@ -243,6 +305,10 @@
     .news-pager{
       justify-content:center;
       margin-top:12px;
+    }
+    .inline-marker-actions{
+      justify-content:flex-start;
+      margin-top:6px;
     }
     .toast-stack{
       position:fixed;
@@ -542,7 +608,7 @@
               <h4>新建ニュース</h4>
               <span class="hint">填写完成后点击创建</span>
             </div>
-            <div class="item-row news-create">
+            <div class="item-row news-create" data-news-existing-images="0">
               <p class="news-create-subtitle">先完成标题和正文，再设置图片、附件和发布状态。</p>
               <div class="news-create-grid">
                 <div class="news-main-fields">
@@ -554,6 +620,23 @@
                     <label>正文</label>
                     <textarea name="body" class="textarea-tall" placeholder="这里输入正文内容" title="新闻正文"></textarea>
                     <div class="hint">建议首段概述核心信息，后续分段补充时间、地点、对象与联系方式。</div>
+                    <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+                    <div class="news-editor-tools">
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="h2">[h2]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="note">[note]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="ul">[ul]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="ol">[ol]</button>
+                    </div>
+                    <div class="hint">可在正文中插入图片标记：<code>[img:1|full]</code>、<code>[img:2|left]</code>、<code>[img:3|right]</code>。</div>
+                    <div class="item-actions inline-marker-actions">
+                      <button type="button" class="btn btn-outline" data-insert-news-img-marker data-marker-layout="full">[img:n|full]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-img-marker data-marker-layout="left">[img:n|left]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-img-marker data-marker-layout="right">[img:n|right]</button>
+                    </div>
+                    <div class="news-preview">
+                      <p class="news-preview-title">正文实时预览</p>
+                      <div class="news-preview-box" data-news-preview></div>
+                    </div>
                   </div>
                 </div>
                 <div class="news-side-panel">
@@ -605,7 +688,7 @@
             {% if news_items and news_items|length > 0 %}
               <div class="news-list-wrap">
                 {% for n in news_items %}
-                  <div class="item-row news-item" data-news-id="{{ n.id }}">
+                  <div class="item-row news-item" data-news-id="{{ n.id }}" data-news-existing-images="{{ n.image_paths|length if n.image_paths else 0 }}">
                     <div class="news-meta">
                       <span class="badge">ID {{ n.id }}</span>
                       {% if n.is_published %}<span class="badge">公開中</span>{% else %}<span class="badge">非公開</span>{% endif %}
@@ -620,6 +703,23 @@
                         <div>
                           <label>正文</label>
                           <textarea name="body" class="textarea-tall" title="新闻正文">{{ n.body or '' }}</textarea>
+                          <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+                          <div class="news-editor-tools">
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="h2">[h2]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="note">[note]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="ul">[ul]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="ol">[ol]</button>
+                          </div>
+                          <div class="hint">可在正文中插入图片标记：<code>[img:1|full]</code>、<code>[img:2|left]</code>、<code>[img:3|right]</code>。</div>
+                          <div class="item-actions inline-marker-actions">
+                            <button type="button" class="btn btn-outline" data-insert-news-img-marker data-marker-layout="full">[img:n|full]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-img-marker data-marker-layout="left">[img:n|left]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-img-marker data-marker-layout="right">[img:n|right]</button>
+                          </div>
+                          <div class="news-preview">
+                            <p class="news-preview-title">正文实时预览</p>
+                            <div class="news-preview-box" data-news-preview></div>
+                          </div>
                         </div>
                       </div>
                       <div class="news-side-fields">
@@ -690,7 +790,7 @@
             <div id="servicesList">
               {% if services and services|length > 0 %}
                 {% for s in services %}
-                  <div class="item-row">
+                  <div class="item-row" data-service-existing-images="{{ s.detail_images|length if s.detail_images else 0 }}">
                     <div class="subpage-hint">子页面链接：<a href="/services/{{ loop.index0 }}" target="_blank">/services/{{ loop.index0 }}</a>（保存后生效）</div>
                     <div class="item-fields">
                       <div>
@@ -710,6 +810,23 @@
                       <div>
                         <label>详情页正文（可选）</label>
                         <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容">{{ s.detail_body or '' }}</textarea>
+                        <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+                        <div class="news-editor-tools">
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="ul">[ul]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="ol">[ol]</button>
+                        </div>
+                        <div class="hint">可在正文中插入图片标记：<code>[img:1|full]</code>、<code>[img:2|left]</code>、<code>[img:3|right]</code>。</div>
+                        <div class="item-actions inline-marker-actions">
+                          <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="full">[img:n|full]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="left">[img:n|left]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="right">[img:n|right]</button>
+                        </div>
+                        <div class="news-preview">
+                          <p class="news-preview-title">详情页正文实时预览</p>
+                          <div class="news-preview-box" data-service-preview></div>
+                        </div>
                       </div>
                     </div>
                     <div class="item-fields simple">
@@ -733,7 +850,7 @@
                   </div>
                 {% endfor %}
               {% else %}
-                <div class="item-row">
+                <div class="item-row" data-service-existing-images="0">
                   <div class="item-fields">
                     <div>
                       <label>标题</label>
@@ -752,6 +869,23 @@
                     <div>
                       <label>详情页正文（可选）</label>
                       <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容"></textarea>
+                      <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+                      <div class="news-editor-tools">
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="ul">[ul]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="ol">[ol]</button>
+                      </div>
+                      <div class="hint">可在正文中插入图片标记：<code>[img:1|full]</code>、<code>[img:2|left]</code>、<code>[img:3|right]</code>。</div>
+                      <div class="item-actions inline-marker-actions">
+                        <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="full">[img:n|full]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="left">[img:n|left]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="right">[img:n|right]</button>
+                      </div>
+                      <div class="news-preview">
+                        <p class="news-preview-title">详情页正文实时预览</p>
+                        <div class="news-preview-box" data-service-preview></div>
+                      </div>
                     </div>
                   </div>
                   <div class="item-fields simple">
@@ -1028,7 +1162,7 @@
   <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
 
   <template id="serviceItemTpl">
-    <div class="item-row">
+    <div class="item-row" data-service-existing-images="0">
       <div class="item-fields">
         <div>
           <label>标题</label>
@@ -1047,6 +1181,23 @@
         <div>
           <label>详情页正文（可选）</label>
           <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容" title="详情页正文"></textarea>
+          <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+          <div class="news-editor-tools">
+            <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="ul">[ul]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="ol">[ol]</button>
+          </div>
+          <div class="hint">可在正文中插入图片标记：<code>[img:1|full]</code>、<code>[img:2|left]</code>、<code>[img:3|right]</code>。</div>
+          <div class="item-actions inline-marker-actions">
+            <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="full">[img:n|full]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="left">[img:n|left]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-img-marker data-marker-layout="right">[img:n|right]</button>
+          </div>
+          <div class="news-preview">
+            <p class="news-preview-title">详情页正文实时预览</p>
+            <div class="news-preview-box" data-service-preview></div>
+          </div>
         </div>
       </div>
       <div class="item-fields simple">
@@ -1276,6 +1427,167 @@
       if (!list || !tpl) return;
       const node = tpl.content.firstElementChild.cloneNode(true);
       list.appendChild(node);
+      return node;
+    };
+
+    const insertAtCursor = (textarea, text) => {
+      if (!textarea) return;
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? textarea.value.length;
+      const before = textarea.value.slice(0, start);
+      const after = textarea.value.slice(end);
+      textarea.value = `${before}${text}${after}`;
+      const nextPos = start + text.length;
+      textarea.focus();
+      textarea.setSelectionRange(nextPos, nextPos);
+    };
+
+    const nextImageMarkerNo = (textarea) => {
+      const value = textarea?.value || "";
+      const matches = value.match(/\[img:(\d+)(?:\|(left|right|full))?\]|\{\{img:(\d+)(?:\|(left|right|full))?\}\}/gi) || [];
+      return matches.length + 1;
+    };
+    const escapeHtml = (text) => String(text || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+    const newsTokenRegex = /\{\{img:(\d+)(?:\|(left|right|full))?\}\}|\[img:(\d+)(?:\|(left|right|full))?\]|\[h2\](.*?)\[\/h2\]|\[note\](.*?)\[\/note\]|\[ul\](.*?)\[\/ul\]|\[ol\](.*?)\[\/ol\]/gis;
+    const parseNewsBlocks = (body) => {
+      const text = String(body || "").replaceAll("\r\n", "\n");
+      const blocks = [];
+      let cursor = 0;
+      for (const m of text.matchAll(newsTokenRegex)) {
+        const start = m.index ?? 0;
+        const before = text.slice(cursor, start).trim();
+        if (before) blocks.push({ type: "text", value: before });
+        const imgNoRaw = m[1] || m[3];
+        if (imgNoRaw != null) {
+          const layout = ((m[2] || m[4] || "full") + "").toLowerCase();
+          blocks.push({ type: "image", no: Number(imgNoRaw), layout: ["left", "right", "full"].includes(layout) ? layout : "full" });
+          cursor = start + m[0].length;
+          continue;
+        }
+        if (m[5] != null) { blocks.push({ type: "heading", value: String(m[5]).trim() }); cursor = start + m[0].length; continue; }
+        if (m[6] != null) { blocks.push({ type: "note", value: String(m[6]).trim() }); cursor = start + m[0].length; continue; }
+        if (m[7] != null) {
+          const items = String(m[7]).split("|").map((x) => x.trim()).filter(Boolean);
+          if (items.length) blocks.push({ type: "list", ordered: false, items });
+          cursor = start + m[0].length;
+          continue;
+        }
+        if (m[8] != null) {
+          const items = String(m[8]).split("|").map((x) => x.trim()).filter(Boolean);
+          if (items.length) blocks.push({ type: "list", ordered: true, items });
+          cursor = start + m[0].length;
+          continue;
+        }
+        cursor = start + m[0].length;
+      }
+      const tail = text.slice(cursor).trim();
+      if (tail) blocks.push({ type: "text", value: tail });
+      return blocks;
+    };
+    const buildNewsPreviewHtml = (body) => {
+      const blocks = parseNewsBlocks(body);
+      if (!blocks.length) {
+        return '<div class="news-preview-empty">在正文输入内容后，这里会显示排版预览。</div>';
+      }
+      return blocks.map((block) => {
+        if (block.type === "heading") return `<h4 class="news-preview-h2">${escapeHtml(block.value)}</h4>`;
+        if (block.type === "note") return `<p class="news-preview-note">${escapeHtml(block.value)}</p>`;
+        if (block.type === "list") {
+          const tag = block.ordered ? "ol" : "ul";
+          const items = block.items.map((li) => `<li>${escapeHtml(li)}</li>`).join("");
+          return `<${tag} class="news-preview-list">${items}</${tag}>`;
+        }
+        if (block.type === "image") return `<div class="news-preview-img">图片占位：第 ${Math.max(1, Number(block.no) || 1)} 张（${escapeHtml(block.layout || "full")}）</div>`;
+        return `<p>${escapeHtml(block.value)}</p>`;
+      }).join("");
+    };
+    const refreshNewsPreview = (root) => {
+      if (!root) return;
+      const area = root.querySelector('textarea[name="body"]');
+      const preview = root.querySelector("[data-news-preview]");
+      if (!area || !preview) return;
+      preview.innerHTML = buildNewsPreviewHtml(area.value || "");
+    };
+    const markerMaxIndex = (body) => {
+      const matches = String(body || "").matchAll(/\[img:(\d+)(?:\|(left|right|full))?\]|\{\{img:(\d+)(?:\|(left|right|full))?\}\}/gi);
+      let maxNo = 0;
+      for (const m of matches) {
+        const raw = m[1] || m[3];
+        const n = Number(raw || 0);
+        if (Number.isFinite(n) && n > maxNo) maxNo = n;
+      }
+      return maxNo;
+    };
+    const insertNewsTag = (textarea, tag) => {
+      if (!textarea) return;
+      const templates = {
+        h2: "\n[h2]小标题[/h2]\n",
+        note: "\n[note]这里写强调内容[/note]\n",
+        ul: "\n[ul]要点1|要点2|要点3[/ul]\n",
+        ol: "\n[ol]步骤1|步骤2|步骤3[/ol]\n",
+      };
+      insertAtCursor(textarea, templates[tag] || "");
+    };
+    const insertServiceTag = (textarea, tag) => {
+      if (!textarea) return;
+      const templates = {
+        h2: "\n[h2]小标题[/h2]\n",
+        note: "\n[note]这里写强调内容[/note]\n",
+        ul: "\n[ul]要点1|要点2|要点3[/ul]\n",
+        ol: "\n[ol]步骤1|步骤2|步骤3[/ol]\n",
+      };
+      insertAtCursor(textarea, templates[tag] || "");
+    };
+    const buildServicePreviewHtml = (body) => {
+      const blocks = parseNewsBlocks(body);
+      if (!blocks.length) {
+        return '<div class="news-preview-empty">在详情页正文输入内容后，这里会显示排版预览。</div>';
+      }
+      return blocks.map((block) => {
+        if (block.type === "heading") return `<h4 class="news-preview-h2">${escapeHtml(block.value)}</h4>`;
+        if (block.type === "note") return `<p class="news-preview-note">${escapeHtml(block.value)}</p>`;
+        if (block.type === "list") {
+          const tag = block.ordered ? "ol" : "ul";
+          const items = block.items.map((li) => `<li>${escapeHtml(li)}</li>`).join("");
+          return `<${tag} class="news-preview-list">${items}</${tag}>`;
+        }
+        if (block.type === "image") return `<div class="news-preview-img">插图占位：第 ${Math.max(1, Number(block.no) || 1)} 张（${escapeHtml(block.layout || "full")}）</div>`;
+        return `<p>${escapeHtml(block.value)}</p>`;
+      }).join("");
+    };
+    const refreshServicePreview = (root) => {
+      if (!root) return;
+      const area = root.querySelector('textarea[name="services_detail_body"]');
+      const preview = root.querySelector("[data-service-preview]");
+      if (!area || !preview) return;
+      preview.innerHTML = buildServicePreviewHtml(area.value || "");
+    };
+    const countServiceImages = (root) => {
+      const area = root?.querySelector('textarea[name="services_detail_images"]');
+      if (!area) return 0;
+      return String(area.value || "")
+        .replaceAll("，", ",")
+        .replaceAll(",", "\n")
+        .split("\n")
+        .map((x) => x.trim())
+        .filter(Boolean).length;
+    };
+    const validateServiceRows = () => {
+      const rows = document.querySelectorAll("#servicesList .item-row");
+      for (const row of rows) {
+        const body = row.querySelector('textarea[name="services_detail_body"]')?.value || "";
+        const markerNo = markerMaxIndex(body);
+        const existingCount = Number(row.getAttribute("data-service-existing-images") || "0");
+        const imageCount = countServiceImages(row);
+        const available = Math.max(existingCount, imageCount);
+        if (markerNo > available) {
+          return `服务详情正文引用了第 ${markerNo} 张图片，但当前仅有 ${available} 张可用图片。请检查图片标记或补充图片。`;
+        }
+      }
+      return "";
     };
 
     const toastStack = document.getElementById("toastStack");
@@ -1315,6 +1627,11 @@
     if (saveForm) {
       saveForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        const serviceErr = validateServiceRows();
+        if (serviceErr) {
+          showToast("err", "保存失败", serviceErr);
+          return;
+        }
         if (saveBtn) {
           saveBtn.disabled = true;
           saveBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 保存中...';
@@ -1356,7 +1673,8 @@
       if (!el) return;
 
       if (el.closest("[data-add-service]")) {
-        addItem("servicesList", "serviceItemTpl");
+        const node = addItem("servicesList", "serviceItemTpl");
+        refreshServicePreview(node);
       }
       if (el.closest("[data-add-strength]")) {
         addItem("strengthsList", "strengthItemTpl");
@@ -1372,6 +1690,40 @@
       }
       if (el.closest("[data-add-profile-row]")) {
         addItem("profileRowsList", "profileRowTpl");
+      }
+      if (el.closest("[data-insert-service-img-marker]")) {
+        const row = el.closest(".item-row");
+        const area = row?.querySelector('textarea[name="services_detail_body"]');
+        if (!area) return;
+        const markerNo = nextImageMarkerNo(area);
+        const layout = (el.getAttribute("data-marker-layout") || "full").toLowerCase();
+        insertAtCursor(area, `\n[img:${markerNo}|${layout}]\n`);
+        refreshServicePreview(row);
+      }
+      if (el.closest("[data-insert-service-tag]")) {
+        const row = el.closest(".item-row");
+        const area = row?.querySelector('textarea[name="services_detail_body"]');
+        const tag = (el.getAttribute("data-insert-service-tag") || "").toLowerCase();
+        if (!area || !tag) return;
+        insertServiceTag(area, tag);
+        refreshServicePreview(row);
+      }
+      if (el.closest("[data-insert-news-img-marker]")) {
+        const root = el.closest(".news-item, .news-create");
+        const area = root?.querySelector('textarea[name="body"]');
+        if (!area) return;
+        const markerNo = nextImageMarkerNo(area);
+        const layout = (el.getAttribute("data-marker-layout") || "full").toLowerCase();
+        insertAtCursor(area, `\n[img:${markerNo}|${layout}]\n`);
+        refreshNewsPreview(root);
+      }
+      if (el.closest("[data-insert-news-tag]")) {
+        const root = el.closest(".news-item, .news-create");
+        const area = root?.querySelector('textarea[name="body"]');
+        const tag = (el.getAttribute("data-insert-news-tag") || "").toLowerCase();
+        if (!area || !tag) return;
+        insertNewsTag(area, tag);
+        refreshNewsPreview(root);
       }
       if (el.closest("[data-news-filter-apply]")) {
         const q = document.getElementById("news_q")?.value?.trim() || "";
@@ -1452,10 +1804,13 @@
         if (kind === "image") {
           const area = root.querySelector('textarea[name="services_detail_images"]');
           appendLines(area, data.items.map((item) => item.url).filter(Boolean));
+          const latestCount = countServiceImages(root);
+          root.setAttribute("data-service-existing-images", String(latestCount));
         } else {
           const area = root.querySelector('textarea[name="services_detail_files"]');
           appendLines(area, data.items.map((item) => `${item.name || "文件"}|${item.url || ""}`));
         }
+        refreshServicePreview(root);
       } catch (err) {
         const message = (err?.message || "上传失败，请稍后再试").toString().slice(0, 260);
         alert(message);
@@ -1474,6 +1829,35 @@
       if (el.matches("[data-services-files-upload]")) {
         uploadServiceAssets(el, "file");
       }
+      if (el.matches('.item-row textarea[name="services_detail_body"], .item-row textarea[name="services_detail_images"]')) {
+        const row = el.closest(".item-row");
+        if (el.matches('textarea[name="services_detail_images"]')) {
+          const latestCount = countServiceImages(row);
+          row?.setAttribute("data-service-existing-images", String(latestCount));
+        }
+        refreshServicePreview(row);
+      }
+      if (el.matches('.news-item textarea[name="body"], .news-create textarea[name="body"], .news-item input[name="images"], .news-create input[name="images"]')) {
+        const root = el.closest(".news-item, .news-create");
+        refreshNewsPreview(root);
+      }
+    });
+
+    document.addEventListener("input", (e) => {
+      const el = e.target instanceof Element ? e.target : null;
+      if (!el) return;
+      if (el.matches('.news-item textarea[name="body"], .news-create textarea[name="body"]')) {
+        const root = el.closest(".news-item, .news-create");
+        refreshNewsPreview(root);
+      }
+      if (el.matches('.item-row textarea[name="services_detail_body"], .item-row textarea[name="services_detail_images"]')) {
+        const row = el.closest(".item-row");
+        if (el.matches('textarea[name="services_detail_images"]')) {
+          const latestCount = countServiceImages(row);
+          row?.setAttribute("data-service-existing-images", String(latestCount));
+        }
+        refreshServicePreview(row);
+      }
     });
 
 
@@ -1486,9 +1870,24 @@
       const fd = new FormData();
       fd.append("title", title);
       const body = root.querySelector('textarea[name="body"]')?.value || "";
+      const bodyPlain = body
+        .replace(/\{\{img:(\d+)(?:\|(left|right|full))?\}\}|\[img:(\d+)(?:\|(left|right|full))?\]/gi, "")
+        .replace(/\[h2\](.*?)\[\/h2\]|\[note\](.*?)\[\/note\]|\[ul\](.*?)\[\/ul\]|\[ol\](.*?)\[\/ol\]/gis, "$1$2$3$4")
+        .trim();
+      if (bodyPlain.length < 8) {
+        alert("正文内容太短，请至少填写一段有效文本。");
+        return;
+      }
       fd.append("body", body);
       const images = Array.from(root.querySelector('input[name="images"]')?.files || []);
       const attachments = Array.from(root.querySelector('input[name="attachments"]')?.files || []);
+      const existingImageCount = Number(root.getAttribute("data-news-existing-images") || "0");
+      const availableImages = Math.max(0, existingImageCount) + images.length;
+      const maxMarkerNo = markerMaxIndex(body);
+      if (maxMarkerNo > availableImages) {
+        alert(`正文中引用了第 ${maxMarkerNo} 张图片，但当前可用图片只有 ${availableImages} 张，请检查图片标记。`);
+        return;
+      }
       images.forEach((file) => fd.append("images", file));
       attachments.forEach((file) => fd.append("attachments", file));
       const isPublished = root.querySelector('input[name="is_published"]')?.checked;
@@ -1497,6 +1896,12 @@
         .then(() => window.location.reload())
         .catch(() => alert("提交失败，请稍后再试"));
     };
+    document.querySelectorAll(".news-item, .news-create").forEach((root) => refreshNewsPreview(root));
+    document.querySelectorAll("#servicesList .item-row").forEach((row) => {
+      const currentCount = countServiceImages(row);
+      if (currentCount > 0) row.setAttribute("data-service-existing-images", String(currentCount));
+      refreshServicePreview(row);
+    });
   </script>
 </body>
 </html>
