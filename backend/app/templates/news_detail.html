@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{ news.title }} | EIHO News</title>
+  <meta name="description" content="{{ (news.body or news.title)[:120] }}">
+  <link rel="canonical" href="{{ request.url }}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{ news.title }} | EIHO News">
+  <meta property="og:description" content="{{ (news.body or news.title)[:120] }}">
+  <meta property="og:url" content="{{ request.url }}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="/static/css/main.css" rel="stylesheet">

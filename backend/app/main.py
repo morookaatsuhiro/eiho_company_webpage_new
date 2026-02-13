@@ -3,11 +3,14 @@ FastAPI 主应用：路由、中间件、静态文件托管
 """
 import json
 import logging
+import os
+from datetime import datetime, timezone
+from html import escape
 from pathlib import Path
 from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -85,6 +88,67 @@ def serve_frontend():
     if not html_path.exists():
         raise HTTPException(status_code=404, detail="Frontend file not found")
     return FileResponse(str(html_path))
+
+
+def _site_url(request: Request) -> str:
+    """优先使用环境变量 SITE_URL 作为站点主域名。"""
+    env_url = (os.getenv("SITE_URL") or "").strip().rstrip("/")
+    if env_url:
+        return env_url
+    return str(request.base_url).rstrip("/")
+
+
+@app.get("/robots.txt")
+def robots_txt(request: Request):
+    site = _site_url(request)
+    content = f"""User-agent: *
+Allow: /
+
+Sitemap: {site}/sitemap.xml
+"""
+    return Response(content=content, media_type="text/plain; charset=utf-8")
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml(request: Request, db: Session = Depends(get_db)):
+    site = _site_url(request)
+    now_iso = datetime.now(timezone.utc).date().isoformat()
+    urls: list[tuple[str, str]] = [
+        (f"{site}/", now_iso),
+        (f"{site}/news", now_iso),
+    ]
+
+    # 已发布新闻详情页
+    for item in list_published_news(db):
+        last_dt = item.updated_at or item.created_at
+        if last_dt and hasattr(last_dt, "date"):
+            lastmod = last_dt.date().isoformat()
+        else:
+            lastmod = now_iso
+        urls.append((f"{site}/news/{item.id}", lastmod))
+
+    # 服务详情页
+    try:
+        home = get_or_create_home(db)
+        services = json.loads(home.services_json or "[]")
+        if isinstance(services, list):
+            for i in range(len(services)):
+                urls.append((f"{site}/services/{i}", now_iso))
+    except Exception:
+        pass
+
+    xml_items = []
+    for loc, lastmod in urls:
+        xml_items.append(
+            f"<url><loc>{escape(loc)}</loc><lastmod>{lastmod}</lastmod></url>"
+        )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + "".join(xml_items)
+        + "</urlset>"
+    )
+    return Response(content=xml, media_type="application/xml; charset=utf-8")
 
 
 @app.get("/health")
