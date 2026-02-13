@@ -48,8 +48,6 @@
       line-height: 1.45;
     }
     .news-item-title:hover { text-decoration: underline; }
-    .news-item-meta { color: #6b7280; font-size: .88rem; margin-top: .25rem; }
-    .news-item-body { margin-top: .45rem; color: #3d4652; line-height: 1.7; white-space: pre-wrap; }
     .pagination-wrap { margin-top: 1rem; }
     .news-toolbar-note { color: #6b7280; font-size: .9rem; }
     .page-link.disabled, .page-item.disabled .page-link {
@@ -74,7 +72,7 @@
           </div>
           <form method="get" action="/news" class="row g-2">
             <div class="col-sm-7">
-              <input class="form-control" type="text" name="q" value="{{ keyword }}" placeholder="タイトルまたは本文で検索">
+              <input class="form-control" type="text" name="q" value="{{ keyword }}" placeholder="タイトルで検索">
             </div>
             <div class="col-sm-3">
               <select class="form-select" name="sort" title="並び順" aria-label="並び順">
@@ -92,12 +90,6 @@
           {% for item in news_items %}
             <article class="news-item-card">
               <a class="news-item-title" href="/news/{{ item.id }}">{{ item.title }}</a>
-              <div class="news-item-meta">
-                {% if item.created_at %}{{ item.created_at.strftime("%Y-%m-%d") }}{% endif %}
-              </div>
-              {% if item.body %}
-                <div class="news-item-body">{{ item.body[:160] }}{% if item.body|length > 160 %}...{% endif %}</div>
-              {% endif %}
             </article>
           {% endfor %}
         {% else %}
