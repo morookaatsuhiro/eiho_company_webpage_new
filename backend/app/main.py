@@ -774,22 +774,37 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
                 i += 1
                 continue
 
-            row_items = [block]
             j = i + 1
+            seq_items = [block]
             while j < len(blocks):
                 nxt = blocks[j]
                 nxt_type = str(nxt.get("type") or "")
                 nxt_side = nxt.get("layout") in {"left", "right", "center"}
-                if nxt_side and nxt_type in {"image", "image_link"} and len(row_items) < 3:
-                    row_items.append(nxt)
+                if nxt_side and nxt_type in {"image", "image_link"}:
+                    seq_items.append(nxt)
                     j += 1
                 else:
                     break
 
-            if len(row_items) >= 2:
-                compact_blocks.append({"type": "media_row", "row_items": row_items})
-            else:
-                compact_blocks.append(block)
+            k = 0
+            while k < len(seq_items):
+                remaining = len(seq_items) - k
+                if remaining >= 3:
+                    preview = seq_items[k:k + 3]
+                    has_center = any(str(item.get("layout") or "") == "center" for item in preview)
+                    chunk_size = 3 if has_center else 2
+                elif remaining == 2:
+                    chunk_size = 2
+                else:
+                    chunk_size = 1
+
+                chunk = seq_items[k:k + chunk_size]
+                if len(chunk) >= 2:
+                    compact_blocks.append({"type": "media_row", "row_items": chunk})
+                else:
+                    compact_blocks.append(chunk[0])
+                k += chunk_size
+
             i = j
 
         remaining_images = [url for i, url in enumerate(images) if i not in used_indexes]
