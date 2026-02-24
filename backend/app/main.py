@@ -671,10 +671,10 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
         """
         text = str(detail_body or "").replace("\r\n", "\n")
         pattern = re.compile(
-            r"\{\{img:(\d+)(?:\|(left|right|full))?\}\}"
-            r"|\[img:(\d+)(?:\|(left|right|full))?\]"
-            r"|\{\{imglink:(\d+)\|([^|}\n]+)(?:\|([^|}\n]+))?(?:\|(left|right|full))?\}\}"
-            r"|\[imglink:(\d+)\|([^\|\]\n]+)(?:\|([^\|\]\n]+))?(?:\|(left|right|full))?\]"
+            r"\{\{img:(\d+)(?:\|(left|right|full|center))?\}\}"
+            r"|\[img:(\d+)(?:\|(left|right|full|center))?\]"
+            r"|\{\{imglink:(\d+)\|([^|}\n]+)(?:\|([^|}\n]+))?(?:\|(left|right|full|center))?\}\}"
+            r"|\[imglink:(\d+)\|([^\|\]\n]+)(?:\|([^\|\]\n]+))?(?:\|(left|right|full|center))?\]"
             r"|\[h2\](.*?)\[/h2\]"
             r"|\[note\](.*?)\[/note\]"
             r"|\[ul\](.*?)\[/ul\]"
@@ -692,7 +692,7 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
             idx_raw = m.group(1) or m.group(3)
             if idx_raw is not None:
                 layout_raw = (m.group(2) or m.group(4) or "full").strip().lower()
-                layout = layout_raw if layout_raw in {"left", "right", "full"} else "full"
+                layout = layout_raw if layout_raw in {"left", "right", "full", "center"} else "full"
                 try:
                     img_index = int(idx_raw) - 1
                 except Exception:
@@ -708,7 +708,7 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
                 link_url = str(m.group(6) or m.group(10) or "").strip()
                 link_label = str(m.group(7) or m.group(11) or "查看商品详情").strip() or "查看商品详情"
                 link_layout_raw = (m.group(8) or m.group(12) or "full").strip().lower()
-                link_layout = link_layout_raw if link_layout_raw in {"left", "right", "full"} else "full"
+                link_layout = link_layout_raw if link_layout_raw in {"left", "right", "full", "center"} else "full"
                 try:
                     img_index = int(link_idx_raw) - 1
                 except Exception:
@@ -766,7 +766,7 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
         i = 0
         while i < len(blocks):
             block = blocks[i]
-            side_layout = block.get("layout") in {"left", "right"}
+            side_layout = block.get("layout") in {"left", "right", "center"}
             block_type = str(block.get("type") or "")
             is_side_block = side_layout and block_type in {"image", "image_link"}
             if not is_side_block:
@@ -779,8 +779,8 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
             while j < len(blocks):
                 nxt = blocks[j]
                 nxt_type = str(nxt.get("type") or "")
-                nxt_side = nxt.get("layout") in {"left", "right"}
-                if nxt_side and nxt_type == block_type:
+                nxt_side = nxt.get("layout") in {"left", "right", "center"}
+                if nxt_side and nxt_type == block_type and len(row_items) < 3:
                     row_items.append(nxt)
                     j += 1
                 else:

@@ -129,6 +129,11 @@
       max-width: min(62%, 520px);
       margin-left: auto;
     }
+    .service-inline-media.layout-center {
+      max-width: min(62%, 520px);
+      margin-left: auto;
+      margin-right: auto;
+    }
     .service-inline-media img {
       width: 100%;
       max-height: 520px;
@@ -139,10 +144,12 @@
     }
     .service-inline-row {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: .9rem;
       align-items: stretch;
     }
+    .service-inline-row.cols-1 { grid-template-columns: 1fr; }
+    .service-inline-row.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .service-inline-row.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .service-inline-row .service-inline-media {
       max-width: 100%;
       margin: 0;
@@ -196,12 +203,19 @@
       max-width: min(62%, 520px);
       margin-left: auto;
     }
+    .service-link-card.layout-center {
+      max-width: min(62%, 520px);
+      margin-left: auto;
+      margin-right: auto;
+    }
     .service-link-row {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: .9rem;
       align-items: stretch;
     }
+    .service-link-row.cols-1 { grid-template-columns: 1fr; }
+    .service-link-row.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .service-link-row.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .service-link-row .service-link-card {
       max-width: 100%;
       margin: 0;
@@ -327,13 +341,15 @@
       .service-media-grid { grid-template-columns: 1fr; }
       .service-media-item img { height: 200px; }
       .service-inline-media.layout-left,
-      .service-inline-media.layout-right {
+      .service-inline-media.layout-right,
+      .service-inline-media.layout-center {
         max-width: 100%;
         margin-left: 0;
         margin-right: 0;
       }
       .service-link-card.layout-left,
-      .service-link-card.layout-right {
+      .service-link-card.layout-right,
+      .service-link-card.layout-center {
         max-width: 100%;
         margin-left: 0;
         margin-right: 0;
@@ -378,7 +394,7 @@
                   </div>
                 {% endif %}
               {% elif block.type == "image_row" %}
-                <div class="service-inline-row">
+                <div class="service-inline-row cols-{{ 3 if (block.row_images|length) >= 3 else (block.row_images|length) }}">
                   {% for row_img in block.row_images %}
                     <div class="service-inline-media service-media-item layout-{{ row_img.layout or 'full' }}">
                       <img src="{{ row_img.url }}" alt="{{ service.title }} image row {{ loop.index }}">
@@ -402,7 +418,7 @@
                   </div>
                 </div>
               {% elif block.type == "image_link_row" %}
-                <div class="service-link-row">
+                <div class="service-link-row cols-{{ 3 if (block.row_links|length) >= 3 else (block.row_links|length) }}">
                   {% for row_link in block.row_links %}
                     <div class="service-link-card layout-{{ row_link.layout or 'full' }}">
                       <a class="service-link-thumb" href="{{ row_link.link_url or '#' }}" target="_blank" rel="noopener noreferrer">
