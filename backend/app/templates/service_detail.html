@@ -179,6 +179,71 @@
       transition: none;
       box-shadow: none;
     }
+    .service-link-card {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(11, 59, 102, .14);
+      background: #f8fbff;
+      box-shadow: 0 14px 30px rgba(11, 59, 102, .08);
+      width: 100%;
+    }
+    .service-link-card.layout-full { max-width: 100%; }
+    .service-link-card.layout-left {
+      max-width: min(62%, 520px);
+      margin-right: auto;
+    }
+    .service-link-card.layout-right {
+      max-width: min(62%, 520px);
+      margin-left: auto;
+    }
+    .service-link-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .9rem;
+      align-items: stretch;
+    }
+    .service-link-row .service-link-card {
+      max-width: 100%;
+      margin: 0;
+    }
+    .service-link-thumb {
+      display: block;
+      text-decoration: none;
+      aspect-ratio: 16 / 10;
+      background: #eef4fb;
+    }
+    .service-link-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      cursor: pointer;
+    }
+    .service-link-actions {
+      display: flex;
+      justify-content: flex-end;
+      padding: .65rem .72rem .75rem;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(246, 250, 255, .95));
+      border-top: 1px solid rgba(11, 59, 102, .10);
+    }
+    .service-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .44rem .78rem;
+      border-radius: 999px;
+      border: 1px solid rgba(11, 59, 102, .18);
+      color: #0b3b66;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: .88rem;
+      background: #fff;
+    }
+    .service-link-btn:hover {
+      background: #0f5ea6;
+      border-color: #0f5ea6;
+      color: #fff;
+    }
     .service-inline-row .service-inline-media.service-media-item img {
       width: 100%;
       height: 100%;
@@ -267,6 +332,13 @@
         margin-left: 0;
         margin-right: 0;
       }
+      .service-link-card.layout-left,
+      .service-link-card.layout-right {
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+      }
+      .service-link-row { grid-template-columns: 1fr; }
       .service-inline-row { grid-template-columns: 1fr; }
       .service-inline-row .service-inline-media { aspect-ratio: 4 / 3; }
     }
@@ -317,6 +389,34 @@
                 <div class="service-inline-media service-media-item layout-{{ block.layout or 'full' }}">
                   <img src="{{ block.url }}" alt="{{ service.title }} image inline {{ loop.index }}">
                 </div>
+              {% elif block.type == "image_link" %}
+                <div class="service-link-card layout-{{ block.layout or 'full' }}">
+                  <a class="service-link-thumb" href="{{ block.link_url or '#' }}" target="_blank" rel="noopener noreferrer">
+                    <img src="{{ block.url }}" alt="{{ service.title }} product {{ loop.index }}" data-no-zoom="true">
+                  </a>
+                  <div class="service-link-actions">
+                    <a class="service-link-btn" href="{{ block.link_url or '#' }}" target="_blank" rel="noopener noreferrer">
+                      <span>{{ block.link_label or '查看商品详情' }}</span>
+                      <i class="bi bi-arrow-up-right-circle"></i>
+                    </a>
+                  </div>
+                </div>
+              {% elif block.type == "image_link_row" %}
+                <div class="service-link-row">
+                  {% for row_link in block.row_links %}
+                    <div class="service-link-card layout-{{ row_link.layout or 'full' }}">
+                      <a class="service-link-thumb" href="{{ row_link.link_url or '#' }}" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ row_link.url }}" alt="{{ service.title }} product row {{ loop.index }}" data-no-zoom="true">
+                      </a>
+                      <div class="service-link-actions">
+                        <a class="service-link-btn" href="{{ row_link.link_url or '#' }}" target="_blank" rel="noopener noreferrer">
+                          <span>{{ row_link.link_label or '查看商品详情' }}</span>
+                          <i class="bi bi-arrow-up-right-circle"></i>
+                        </a>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
               {% endif %}
             {% endfor %}
           </div>
@@ -361,7 +461,7 @@
       const viewer = document.getElementById("serviceImageViewer");
       const viewerImg = document.getElementById("serviceImageViewerImg");
       const viewerClose = document.getElementById("serviceImageViewerClose");
-      const images = document.querySelectorAll(".service-media-item img");
+      const images = document.querySelectorAll(".service-media-item img:not([data-no-zoom])");
       if (!viewer || !viewerImg || images.length === 0) return;
 
       const openViewer = (src, alt) => {

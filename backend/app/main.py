@@ -673,6 +673,8 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
         pattern = re.compile(
             r"\{\{img:(\d+)(?:\|(left|right|full))?\}\}"
             r"|\[img:(\d+)(?:\|(left|right|full))?\]"
+            r"|\{\{imglink:(\d+)\|([^|}\n]+)(?:\|([^|}\n]+))?(?:\|(left|right|full))?\}\}"
+            r"|\[imglink:(\d+)\|([^\|\]\n]+)(?:\|([^\|\]\n]+))?(?:\|(left|right|full))?\]"
             r"|\[h2\](.*?)\[/h2\]"
             r"|\[note\](.*?)\[/note\]"
             r"|\[ul\](.*?)\[/ul\]"
@@ -701,7 +703,29 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
                 cursor = m.end()
                 continue
 
-            h2_raw = m.group(5)
+            link_idx_raw = m.group(5) or m.group(9)
+            if link_idx_raw is not None:
+                link_url = str(m.group(6) or m.group(10) or "").strip()
+                link_label = str(m.group(7) or m.group(11) or "查看商品详情").strip() or "查看商品详情"
+                link_layout_raw = (m.group(8) or m.group(12) or "full").strip().lower()
+                link_layout = link_layout_raw if link_layout_raw in {"left", "right", "full"} else "full"
+                try:
+                    img_index = int(link_idx_raw) - 1
+                except Exception:
+                    img_index = -1
+                if 0 <= img_index < len(images):
+                    blocks.append({
+                        "type": "image_link",
+                        "url": images[img_index],
+                        "link_url": link_url,
+                        "link_label": link_label,
+                        "layout": link_layout,
+                    })
+                    used_indexes.add(img_index)
+                cursor = m.end()
+                continue
+
+            h2_raw = m.group(13)
             if h2_raw is not None:
                 title = h2_raw.strip()
                 if title:
@@ -709,7 +733,7 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
                 cursor = m.end()
                 continue
 
-            note_raw = m.group(6)
+            note_raw = m.group(14)
             if note_raw is not None:
                 note_val = note_raw.strip()
                 if note_val:
@@ -717,7 +741,7 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
                 cursor = m.end()
                 continue
 
-            ul_raw = m.group(7)
+            ul_raw = m.group(15)
             if ul_raw is not None:
                 items = [x.strip() for x in ul_raw.split("|") if x.strip()]
                 if items:
@@ -725,7 +749,7 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
                 cursor = m.end()
                 continue
 
-            ol_raw = m.group(8)
+            ol_raw = m.group(16)
             if ol_raw is not None:
                 items = [x.strip() for x in ol_raw.split("|") if x.strip()]
                 if items:
@@ -742,11 +766,10 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
         i = 0
         while i < len(blocks):
             block = blocks[i]
-            is_side_image = (
-                block.get("type") == "image"
-                and block.get("layout") in {"left", "right"}
-            )
-            if not is_side_image:
+            side_layout = block.get("layout") in {"left", "right"}
+            block_type = str(block.get("type") or "")
+            is_side_block = side_layout and block_type in {"image", "image_link"}
+            if not is_side_block:
                 compact_blocks.append(block)
                 i += 1
                 continue
@@ -755,12 +778,18 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
             j = i + 1
             while j < len(blocks):
                 nxt = blocks[j]
-                if nxt.get("type") == "image" and nxt.get("layout") in {"left", "right"}:
+                nxt_type = str(nxt.get("type") or "")
+                nxt_side = nxt.get("layout") in {"left", "right"}
+                if nxt_side and nxt_type == block_type:
                     row_items.append(nxt)
                     j += 1
                 else:
                     break
-            compact_blocks.append({"type": "image_row", "row_images": row_items})
+
+            if block_type == "image":
+                compact_blocks.append({"type": "image_row", "row_images": row_items})
+            else:
+                compact_blocks.append({"type": "image_link_row", "row_links": row_items})
             i = j
 
         remaining_images = [url for i, url in enumerate(images) if i not in used_indexes]
