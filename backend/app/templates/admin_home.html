@@ -700,7 +700,7 @@
                     <label>正文</label>
                     <textarea name="body" class="textarea-tall" placeholder="这里输入正文内容" title="新闻正文"></textarea>
                     <div class="hint">建议首段概述核心信息，后续分段补充时间、地点、对象与联系方式。</div>
-                    <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
+                    <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>、<code>[br]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
                     <div class="news-editor-tools">
                       <button type="button" class="btn btn-outline" data-insert-news-tag="h2">[h2]</button>
                       <button type="button" class="btn btn-outline" data-insert-news-tag="note">[note]</button>
@@ -709,6 +709,7 @@
                       <button type="button" class="btn btn-outline" data-insert-news-tag="big">[big]</button>
                       <button type="button" class="btn btn-outline" data-insert-news-tag="red">[red]</button>
                       <button type="button" class="btn btn-outline" data-insert-news-tag="link">[link]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="br">[br]</button>
                       <button type="button" class="btn btn-outline" data-insert-news-tag="ul">[ul]</button>
                       <button type="button" class="btn btn-outline" data-insert-news-tag="ol">[ol]</button>
                     </div>
@@ -788,7 +789,7 @@
                         <div>
                           <label>正文</label>
                           <textarea name="body" class="textarea-tall" title="新闻正文">{{ n.body or '' }}</textarea>
-                          <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
+                          <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>、<code>[br]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
                           <div class="news-editor-tools">
                             <button type="button" class="btn btn-outline" data-insert-news-tag="h2">[h2]</button>
                             <button type="button" class="btn btn-outline" data-insert-news-tag="note">[note]</button>
@@ -797,6 +798,7 @@
                             <button type="button" class="btn btn-outline" data-insert-news-tag="big">[big]</button>
                             <button type="button" class="btn btn-outline" data-insert-news-tag="red">[red]</button>
                             <button type="button" class="btn btn-outline" data-insert-news-tag="link">[link]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="br">[br]</button>
                             <button type="button" class="btn btn-outline" data-insert-news-tag="ul">[ul]</button>
                             <button type="button" class="btn btn-outline" data-insert-news-tag="ol">[ol]</button>
                           </div>
@@ -900,7 +902,7 @@
                       <div>
                         <label>详情页正文（可选）</label>
                         <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容">{{ s.detail_body or '' }}</textarea>
-                        <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
+                        <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>、<code>[br]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
                         <div class="news-editor-tools">
                           <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
                           <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
@@ -909,6 +911,7 @@
                           <button type="button" class="btn btn-outline" data-insert-service-tag="big">[big]</button>
                           <button type="button" class="btn btn-outline" data-insert-service-tag="red">[red]</button>
                           <button type="button" class="btn btn-outline" data-insert-service-tag="link">[link]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="br">[br]</button>
                           <button type="button" class="btn btn-outline" data-insert-service-tag="ul">[ul]</button>
                           <button type="button" class="btn btn-outline" data-insert-service-tag="ol">[ol]</button>
                         </div>
@@ -969,7 +972,7 @@
                     <div>
                       <label>详情页正文（可选）</label>
                       <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容"></textarea>
-                      <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
+                      <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>、<code>[br]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
                       <div class="news-editor-tools">
                         <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
                         <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
@@ -1291,7 +1294,7 @@
         <div>
           <label>详情页正文（可选）</label>
           <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容" title="详情页正文"></textarea>
-          <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
+          <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>、<code>[br]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
           <div class="news-editor-tools">
             <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
             <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
@@ -1300,6 +1303,7 @@
             <button type="button" class="btn btn-outline" data-insert-service-tag="big">[big]</button>
             <button type="button" class="btn btn-outline" data-insert-service-tag="red">[red]</button>
             <button type="button" class="btn btn-outline" data-insert-service-tag="link">[link]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="br">[br]</button>
             <button type="button" class="btn btn-outline" data-insert-service-tag="ul">[ul]</button>
             <button type="button" class="btn btn-outline" data-insert-service-tag="ol">[ol]</button>
           </div>
@@ -1588,6 +1592,7 @@
     const escapeAttr = (t) => String(t ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
     const replaceInlineMarkup = (escaped) => {
       let s = String(escaped ?? "");
+      s = s.replaceAll("[br]", "<br>");
       const linkOpen = "[link]";
       const linkClose = "[/link]";
       for (;;) {
@@ -1784,6 +1789,7 @@
         big: "[big]放大文字[/big]",
         red: "[red]红色文字[/red]",
         link: "[link]https://example.com|链接文字[/link]",
+        br: "[br]",
       };
       insertAtCursor(textarea, templates[tag] || "");
     };
@@ -1799,6 +1805,7 @@
         big: "[big]放大文字[/big]",
         red: "[red]红色文字[/red]",
         link: "[link]https://example.com|链接文字[/link]",
+        br: "[br]",
       };
       insertAtCursor(textarea, templates[tag] || "");
     };

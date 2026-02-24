@@ -52,8 +52,10 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 def _replace_inline_markup(escaped: str) -> str:
-    """在已转义的字符串中替换 [b]/[big]/[red]/[link]，支持嵌套。"""
+    """在已转义的字符串中替换 [b]/[big]/[red]/[link]/[br]，支持嵌套。"""
     s = escaped
+    # [br] 换行：无闭合标签，直接替换
+    s = s.replace("[br]", "<br>")
     # [link]url|显示文字[/link]：先处理，因结构不同（含 | 分隔）
     link_open, link_close = "[link]", "[/link]"
     lo_len, lc_len = len(link_open), len(link_close)
