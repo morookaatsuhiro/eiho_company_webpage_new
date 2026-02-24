@@ -780,16 +780,16 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
                 nxt = blocks[j]
                 nxt_type = str(nxt.get("type") or "")
                 nxt_side = nxt.get("layout") in {"left", "right", "center"}
-                if nxt_side and nxt_type == block_type and len(row_items) < 3:
+                if nxt_side and nxt_type in {"image", "image_link"} and len(row_items) < 3:
                     row_items.append(nxt)
                     j += 1
                 else:
                     break
 
-            if block_type == "image":
-                compact_blocks.append({"type": "image_row", "row_images": row_items})
+            if len(row_items) >= 2:
+                compact_blocks.append({"type": "media_row", "row_items": row_items})
             else:
-                compact_blocks.append({"type": "image_link_row", "row_links": row_items})
+                compact_blocks.append(block)
             i = j
 
         remaining_images = [url for i, url in enumerate(images) if i not in used_indexes]

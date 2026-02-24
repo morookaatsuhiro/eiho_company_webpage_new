@@ -220,6 +220,19 @@
       max-width: 100%;
       margin: 0;
     }
+    .service-media-row {
+      display: grid;
+      gap: .9rem;
+      align-items: stretch;
+    }
+    .service-media-row.cols-1 { grid-template-columns: 1fr; }
+    .service-media-row.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .service-media-row.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .service-media-row > .service-inline-media,
+    .service-media-row > .service-link-card {
+      max-width: 100%;
+      margin: 0;
+    }
     .service-link-thumb {
       display: block;
       text-decoration: none;
@@ -354,6 +367,7 @@
         margin-left: 0;
         margin-right: 0;
       }
+      .service-media-row { grid-template-columns: 1fr !important; }
       .service-link-row { grid-template-columns: 1fr; }
       .service-inline-row { grid-template-columns: 1fr; }
       .service-inline-row .service-inline-media { aspect-ratio: 4 / 3; }
@@ -431,6 +445,28 @@
                         </a>
                       </div>
                     </div>
+                  {% endfor %}
+                </div>
+              {% elif block.type == "media_row" %}
+                <div class="service-media-row cols-{{ 3 if (block.row_items|length) >= 3 else (block.row_items|length) }}">
+                  {% for row_item in block.row_items %}
+                    {% if row_item.type == "image" %}
+                      <div class="service-inline-media service-media-item layout-{{ row_item.layout or 'full' }}">
+                        <img src="{{ row_item.url }}" alt="{{ service.title }} mixed image {{ loop.index }}">
+                      </div>
+                    {% elif row_item.type == "image_link" %}
+                      <div class="service-link-card layout-{{ row_item.layout or 'full' }}">
+                        <a class="service-link-thumb" href="{{ row_item.link_url or '#' }}" target="_blank" rel="noopener noreferrer">
+                          <img src="{{ row_item.url }}" alt="{{ service.title }} mixed product {{ loop.index }}" data-no-zoom="true">
+                        </a>
+                        <div class="service-link-actions">
+                          <a class="service-link-btn" href="{{ row_item.link_url or '#' }}" target="_blank" rel="noopener noreferrer">
+                            <span>{{ row_item.link_label or '查看商品详情' }}</span>
+                            <i class="bi bi-arrow-up-right-circle"></i>
+                          </a>
+                        </div>
+                      </div>
+                    {% endif %}
                   {% endfor %}
                 </div>
               {% endif %}
