@@ -72,6 +72,16 @@
       word-break: break-word;
       margin: 0;
     }
+    .service-paragraph {
+      color: #3d4652;
+      line-height: 1.85;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      text-indent: 2em;
+    }
+    .service-content .text-large { font-size: 1.15em; font-weight: 600; }
+    .service-content .text-red { color: #c0392b; font-size: inherit; font-weight: inherit; }
     .service-heading {
       margin: .2rem 0 0;
       padding-left: .65rem;
@@ -388,22 +398,24 @@
           <div class="service-content">
             {% for block in service.content_blocks %}
               {% if block.type == "text" %}
-                <p class="service-body">{{ block.value }}</p>
+                <p class="service-body">{{ block.value | inline_markup }}</p>
               {% elif block.type == "heading" %}
-                <h2 class="service-heading">{{ block.value }}</h2>
+                <h2 class="service-heading">{{ block.value | inline_markup }}</h2>
               {% elif block.type == "note" %}
-                <p class="service-note">{{ block.value }}</p>
+                <p class="service-note">{{ block.value | inline_markup }}</p>
+              {% elif block.type == "paragraph" %}
+                <p class="service-paragraph">{{ block.value | inline_markup }}</p>
               {% elif block.type == "list" %}
                 {% if block.ordered %}
                   <div class="service-list ordered">
                     {% for li in block.list_items %}
-                      <p class="service-list-item">{{ li }}</p>
+                      <p class="service-list-item">{{ li | inline_markup }}</p>
                     {% endfor %}
                   </div>
                 {% else %}
                   <div class="service-list unordered">
                     {% for li in block.list_items %}
-                      <p class="service-list-item">{{ li }}</p>
+                      <p class="service-list-item">{{ li | inline_markup }}</p>
                     {% endfor %}
                   </div>
                 {% endif %}

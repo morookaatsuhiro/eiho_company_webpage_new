@@ -6,8 +6,9 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from html import escape
+from html import escape as html_escape
 from pathlib import Path
+from markupsafe import Markup
 from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -48,6 +49,125 @@ if ENV_PATH.exists():
     load_dotenv(dotenv_path=str(ENV_PATH))
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+
+def _replace_inline_markup(escaped: str) -> str:
+    """在已转义的字符串中替换 [b]/[big]/[red]/[link]，支持嵌套。"""
+    s = escaped
+    # [link]url|显示文字[/link]：先处理，因结构不同（含 | 分隔）
+    link_open, link_close = "[link]", "[/link]"
+    lo_len, lc_len = len(link_open), len(link_close)
+    while True:
+        pos = s.find(link_open)
+        if pos < 0:
+            break
+        end_pos = s.find(link_close, pos)
+        if end_pos < 0:
+            break
+        content = s[pos + lo_len : end_pos]
+        pipe = content.find("|")
+        if pipe >= 0:
+            url_part = content[:pipe].strip()
+            label_part = content[pipe + 1 :].strip()
+        else:
+            url_part = content.strip()
+            label_part = url_part or "链接"
+        url_safe = html_escape(url_part).replace('"', "&quot;")
+        label_html = _replace_inline_markup(label_part)
+        anchor = f'<a href="{url_safe}" target="_blank" rel="noopener noreferrer">{label_html}</a>'
+        s = s[:pos] + anchor + s[end_pos + lc_len :]
+
+    tags = [
+        ("b", "<strong>", "</strong>"),
+        ("big", '<span class="text-large">', "</span>"),
+        ("red", '<span class="text-red">', "</span>"),
+    ]
+    for tag_name, open_html, close_html in tags:
+        open_marker = f"[{tag_name}]"
+        close_marker = f"[/{tag_name}]"
+        open_len = len(open_marker)
+        close_len = len(close_marker)
+        while True:
+            pos = s.find(open_marker)
+            if pos < 0:
+                break
+            depth = 1
+            j = pos + open_len
+            while j <= len(s) - close_len and depth > 0:
+                if s[j : j + close_len] == close_marker:
+                    depth -= 1
+                    if depth == 0:
+                        inner = s[pos + open_len : j]
+                        inner = _replace_inline_markup(inner)
+                        s = s[:pos] + open_html + inner + close_html + s[j + close_len :]
+                        break
+                    j += close_len
+                    continue
+                if j <= len(s) - open_len and s[j : j + open_len] == open_marker:
+                    depth += 1
+                    j += open_len
+                    continue
+                j += 1
+            else:
+                j = pos + open_len
+            if depth != 0:
+                break
+    return s
+
+
+def inline_markup(value: str) -> Markup:
+    """Jinja2 过滤器：转义 HTML 后将 [b]/[big]/[red]/[link] 转为对应样式与链接，支持嵌套。"""
+    if value is None:
+        return Markup("")
+    s = html_escape(str(value))
+    return Markup(_replace_inline_markup(s))
+
+
+templates.env.filters["inline_markup"] = inline_markup
+
+
+def _split_list_items(s: str) -> list[str]:
+    """按 | 分割列表项，但忽略 [link]、[b]、[big]、[red] 内部的 |。"""
+    s = s.strip()
+    if not s:
+        return []
+    # 可含 | 的内联标签，按长度降序避免 [b] 被误匹配到 [big]/[link] 前缀
+    tag_names = ["link", "big", "b", "red"]
+    depth = {t: 0 for t in tag_names}
+    start = 0
+    result = []
+    i = 0
+    while i < len(s):
+        at_top = all(depth[t] == 0 for t in tag_names)
+        if at_top and s[i] == "|":
+            part = s[start:i].strip()
+            if part:
+                result.append(part)
+            start = i + 1
+            i += 1
+            continue
+        matched = False
+        for tag in tag_names:
+            open_m = f"[{tag}]"
+            close_m = f"[/{tag}]"
+            if i + len(open_m) <= len(s) and s[i : i + len(open_m)] == open_m:
+                depth[tag] += 1
+                i += len(open_m)
+                matched = True
+                break
+            if i + len(close_m) <= len(s) and s[i : i + len(close_m)] == close_m:
+                depth[tag] -= 1
+                i += len(close_m)
+                matched = True
+                break
+        if not matched:
+            i += 1
+    part = s[start:].strip()
+    if part:
+        result.append(part)
+    return result
+
+
 PRESIDENT_PHOTO_CANDIDATES = [
     BASE_DIR / "images" / "president.jpg",
     BASE_DIR / "images" / "president.png",
@@ -201,7 +321,7 @@ def sitemap_xml(request: Request, db: Session = Depends(get_db)):
     xml_items = []
     for loc, lastmod in urls:
         xml_items.append(
-            f"<url><loc>{escape(loc)}</loc><lastmod>{lastmod}</lastmod></url>"
+            f"<url><loc>{html_escape(loc)}</loc><lastmod>{lastmod}</lastmod></url>"
         )
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>'
@@ -464,7 +584,8 @@ def news_detail(news_id: int, request: Request, db: Session = Depends(get_db)):
             r"|\[h2\](.*?)\[/h2\]"
             r"|\[note\](.*?)\[/note\]"
             r"|\[ul\](.*?)\[/ul\]"
-            r"|\[ol\](.*?)\[/ol\]",
+            r"|\[ol\](.*?)\[/ol\]"
+            r"|\[p\](.*?)\[/p\]",
             re.IGNORECASE | re.DOTALL,
         )
         blocks: list[dict] = []
@@ -508,7 +629,7 @@ def news_detail(news_id: int, request: Request, db: Session = Depends(get_db)):
 
             ul_raw = m.group(7)
             if ul_raw is not None:
-                items = [x.strip() for x in ul_raw.split("|") if x.strip()]
+                items = _split_list_items(ul_raw)
                 if items:
                     blocks.append({"type": "list", "ordered": False, "list_items": items})
                 cursor = m.end()
@@ -516,9 +637,17 @@ def news_detail(news_id: int, request: Request, db: Session = Depends(get_db)):
 
             ol_raw = m.group(8)
             if ol_raw is not None:
-                items = [x.strip() for x in ol_raw.split("|") if x.strip()]
+                items = _split_list_items(ol_raw)
                 if items:
                     blocks.append({"type": "list", "ordered": True, "list_items": items})
+                cursor = m.end()
+                continue
+
+            p_raw = m.group(9)
+            if p_raw is not None:
+                val = p_raw.strip()
+                if val:
+                    blocks.append({"type": "paragraph", "value": val})
                 cursor = m.end()
                 continue
 
@@ -678,7 +807,8 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
             r"|\[h2\](.*?)\[/h2\]"
             r"|\[note\](.*?)\[/note\]"
             r"|\[ul\](.*?)\[/ul\]"
-            r"|\[ol\](.*?)\[/ol\]",
+            r"|\[ol\](.*?)\[/ol\]"
+            r"|\[p\](.*?)\[/p\]",
             re.IGNORECASE | re.DOTALL,
         )
         blocks: list[dict] = []
@@ -743,7 +873,7 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
 
             ul_raw = m.group(15)
             if ul_raw is not None:
-                items = [x.strip() for x in ul_raw.split("|") if x.strip()]
+                items = _split_list_items(ul_raw)
                 if items:
                     blocks.append({"type": "list", "ordered": False, "list_items": items})
                 cursor = m.end()
@@ -751,9 +881,17 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
 
             ol_raw = m.group(16)
             if ol_raw is not None:
-                items = [x.strip() for x in ol_raw.split("|") if x.strip()]
+                items = _split_list_items(ol_raw)
                 if items:
                     blocks.append({"type": "list", "ordered": True, "list_items": items})
+                cursor = m.end()
+                continue
+
+            p_raw = m.group(17)
+            if p_raw is not None:
+                val = p_raw.strip()
+                if val:
+                    blocks.append({"type": "paragraph", "value": val})
                 cursor = m.end()
                 continue
 

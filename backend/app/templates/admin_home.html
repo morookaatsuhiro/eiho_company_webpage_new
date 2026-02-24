@@ -123,6 +123,18 @@
     }
     textarea{min-height:92px;resize:vertical;}
     textarea.textarea-tall{min-height:160px;}
+    textarea[name="services_detail_body"]{
+      max-height:320px;
+      overflow-y:auto;
+      word-break:break-all;
+      overflow-wrap:break-word;
+    }
+    textarea[name="services_detail_images"],
+    textarea[name="services_detail_files"]{
+      max-height:180px;
+      overflow-y:auto;
+      word-break:break-all;
+    }
     .form-actions{
       display:flex;
       gap:12px;
@@ -238,11 +250,16 @@
       background:#fff;
       padding:10px;
       min-height:62px;
+      max-height:220px;
+      overflow-y:auto;
+      overflow-x:hidden;
       display:grid;
       gap:8px;
       color:#344054;
       font-size:13px;
       line-height:1.75;
+      word-break:break-all;
+      overflow-wrap:break-word;
     }
     .news-preview-empty{color:#94a3b8;}
     .news-preview-h2{
@@ -262,6 +279,9 @@
       margin:0;
       white-space:pre-wrap;
     }
+    .news-preview-p{margin:0;text-indent:2em;}
+    .news-preview-box .text-large{font-size:1.15em;font-weight:600;}
+    .news-preview-box .text-red{color:#c0392b;font-size:inherit;font-weight:inherit;}
     .news-preview-list{margin:0;padding-left:18px;display:grid;gap:4px;}
     .news-preview-img{
       border:1px solid #d7e3f5;
@@ -680,10 +700,15 @@
                     <label>正文</label>
                     <textarea name="body" class="textarea-tall" placeholder="这里输入正文内容" title="新闻正文"></textarea>
                     <div class="hint">建议首段概述核心信息，后续分段补充时间、地点、对象与联系方式。</div>
-                    <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+                    <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
                     <div class="news-editor-tools">
                       <button type="button" class="btn btn-outline" data-insert-news-tag="h2">[h2]</button>
                       <button type="button" class="btn btn-outline" data-insert-news-tag="note">[note]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="p">[p]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="b">[b]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="big">[big]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="red">[red]</button>
+                      <button type="button" class="btn btn-outline" data-insert-news-tag="link">[link]</button>
                       <button type="button" class="btn btn-outline" data-insert-news-tag="ul">[ul]</button>
                       <button type="button" class="btn btn-outline" data-insert-news-tag="ol">[ol]</button>
                     </div>
@@ -763,10 +788,15 @@
                         <div>
                           <label>正文</label>
                           <textarea name="body" class="textarea-tall" title="新闻正文">{{ n.body or '' }}</textarea>
-                          <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+                          <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
                           <div class="news-editor-tools">
                             <button type="button" class="btn btn-outline" data-insert-news-tag="h2">[h2]</button>
                             <button type="button" class="btn btn-outline" data-insert-news-tag="note">[note]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="p">[p]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="b">[b]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="big">[big]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="red">[red]</button>
+                            <button type="button" class="btn btn-outline" data-insert-news-tag="link">[link]</button>
                             <button type="button" class="btn btn-outline" data-insert-news-tag="ul">[ul]</button>
                             <button type="button" class="btn btn-outline" data-insert-news-tag="ol">[ol]</button>
                           </div>
@@ -870,10 +900,15 @@
                       <div>
                         <label>详情页正文（可选）</label>
                         <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容">{{ s.detail_body or '' }}</textarea>
-                        <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+                        <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
                         <div class="news-editor-tools">
                           <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
                           <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="p">[p]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="b">[b]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="big">[big]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="red">[red]</button>
+                          <button type="button" class="btn btn-outline" data-insert-service-tag="link">[link]</button>
                           <button type="button" class="btn btn-outline" data-insert-service-tag="ul">[ul]</button>
                           <button type="button" class="btn btn-outline" data-insert-service-tag="ol">[ol]</button>
                         </div>
@@ -934,10 +969,15 @@
                     <div>
                       <label>详情页正文（可选）</label>
                       <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容"></textarea>
-                      <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+                      <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
                       <div class="news-editor-tools">
                         <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
                         <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="p">[p]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="b">[b]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="big">[big]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="red">[red]</button>
+                        <button type="button" class="btn btn-outline" data-insert-service-tag="link">[link]</button>
                         <button type="button" class="btn btn-outline" data-insert-service-tag="ul">[ul]</button>
                         <button type="button" class="btn btn-outline" data-insert-service-tag="ol">[ol]</button>
                       </div>
@@ -1251,10 +1291,15 @@
         <div>
           <label>详情页正文（可选）</label>
           <textarea name="services_detail_body" placeholder="这里填写子页面的详细介绍内容" title="详情页正文"></textarea>
-          <div class="hint">支持文本结构：<code>[h2]小标题[/h2]</code>、<code>[note]强调[/note]</code>、<code>[ul]要点1|要点2[/ul]</code>。</div>
+          <div class="hint">支持文本结构：<code>[h2]</code>、<code>[note]</code>、<code>[p]</code>、<code>[b]加粗[/b]</code>、<code>[big]放大[/big]</code>、<code>[red]红色[/red]</code>、<code>[link]url|链接文字[/link]</code>（可嵌套）、<code>[ul]</code>、<code>[ol]</code>。</div>
           <div class="news-editor-tools">
             <button type="button" class="btn btn-outline" data-insert-service-tag="h2">[h2]</button>
             <button type="button" class="btn btn-outline" data-insert-service-tag="note">[note]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="p">[p]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="b">[b]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="big">[big]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="red">[red]</button>
+            <button type="button" class="btn btn-outline" data-insert-service-tag="link">[link]</button>
             <button type="button" class="btn btn-outline" data-insert-service-tag="ul">[ul]</button>
             <button type="button" class="btn btn-outline" data-insert-service-tag="ol">[ol]</button>
           </div>
@@ -1540,7 +1585,100 @@
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;");
-    const newsTokenRegex = /\{\{img:(\d+)(?:\|(left|right|full|center))?\}\}|\[img:(\d+)(?:\|(left|right|full|center))?\]|\{\{imglink:(\d+)\|([^|}\n]+)(?:\|([^|}\n]+))?(?:\|(left|right|full|center))?\}\}|\[imglink:(\d+)\|([^\|\]\n]+)(?:\|([^\|\]\n]+))?(?:\|(left|right|full|center))?\]|\[h2\](.*?)\[\/h2\]|\[note\](.*?)\[\/note\]|\[ul\](.*?)\[\/ul\]|\[ol\](.*?)\[\/ol\]/gis;
+    const escapeAttr = (t) => String(t ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+    const replaceInlineMarkup = (escaped) => {
+      let s = String(escaped ?? "");
+      const linkOpen = "[link]";
+      const linkClose = "[/link]";
+      for (;;) {
+        const pos = s.indexOf(linkOpen);
+        if (pos < 0) break;
+        const endPos = s.indexOf(linkClose, pos);
+        if (endPos < 0) break;
+        const content = s.substring(pos + linkOpen.length, endPos);
+        const pipe = content.indexOf("|");
+        const urlPart = pipe >= 0 ? content.substring(0, pipe).trim() : content.trim();
+        const labelPart = pipe >= 0 ? content.substring(pipe + 1).trim() : (urlPart || "链接");
+        const urlSafe = escapeAttr(urlPart);
+        const labelHtml = replaceInlineMarkup(labelPart);
+        s = s.slice(0, pos) + `<a href="${urlSafe}" target="_blank" rel="noopener noreferrer">${labelHtml}</a>` + s.slice(endPos + linkClose.length);
+      }
+      const tags = [
+        ["b", "<strong>", "</strong>"],
+        ["big", '<span class="text-large">', "</span>"],
+        ["red", '<span class="text-red">', "</span>"]
+      ];
+      for (const [tagName, openHtml, closeHtml] of tags) {
+        const openM = `[${tagName}]`;
+        const closeM = `[/${tagName}]`;
+        const openLen = openM.length;
+        const closeLen = closeM.length;
+        for (;;) {
+          const pos = s.indexOf(openM);
+          if (pos < 0) break;
+          let depth = 1;
+          let j = pos + openLen;
+          while (j <= s.length - closeLen && depth > 0) {
+            if (s.substring(j, j + closeLen) === closeM) {
+              depth--;
+              if (depth === 0) {
+                const inner = replaceInlineMarkup(s.substring(pos + openLen, j));
+                s = s.slice(0, pos) + openHtml + inner + closeHtml + s.slice(j + closeLen);
+                break;
+              }
+              j += closeLen;
+              continue;
+            }
+            if (s.substring(j, j + openLen) === openM) { depth++; j += openLen; continue; }
+            j++;
+          }
+          if (depth !== 0) break;
+        }
+      }
+      return s;
+    };
+    const inlineMarkup = (text) => replaceInlineMarkup(escapeHtml(text ?? ""));
+    const splitListItems = (str) => {
+      const s = String(str ?? "").trim();
+      if (!s) return [];
+      const tagNames = ["link", "big", "b", "red"];
+      const depth = { link: 0, big: 0, b: 0, red: 0 };
+      let start = 0;
+      const result = [];
+      let i = 0;
+      while (i < s.length) {
+        const atTop = tagNames.every((t) => depth[t] === 0);
+        if (atTop && s[i] === "|") {
+          const part = s.slice(start, i).trim();
+          if (part) result.push(part);
+          start = i + 1;
+          i++;
+          continue;
+        }
+        let matched = false;
+        for (const tag of tagNames) {
+          const openM = `[${tag}]`;
+          const closeM = `[/${tag}]`;
+          if (s.substring(i, i + openM.length) === openM) {
+            depth[tag]++;
+            i += openM.length;
+            matched = true;
+            break;
+          }
+          if (s.substring(i, i + closeM.length) === closeM) {
+            depth[tag]--;
+            i += closeM.length;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) i++;
+      }
+      const part = s.slice(start).trim();
+      if (part) result.push(part);
+      return result;
+    };
+    const newsTokenRegex = /\{\{img:(\d+)(?:\|(left|right|full|center))?\}\}|\[img:(\d+)(?:\|(left|right|full|center))?\]|\{\{imglink:(\d+)\|([^|}\n]+)(?:\|([^|}\n]+))?(?:\|(left|right|full|center))?\}\}|\[imglink:(\d+)\|([^\|\]\n]+)(?:\|([^\|\]\n]+))?(?:\|(left|right|full|center))?\]|\[h2\](.*?)\[\/h2\]|\[note\](.*?)\[\/note\]|\[ul\](.*?)\[\/ul\]|\[ol\](.*?)\[\/ol\]|\[p\](.*?)\[\/p\]/gis;
     const parseNewsBlocks = (body) => {
       const text = String(body || "").replaceAll("\r\n", "\n");
       const blocks = [];
@@ -1569,14 +1707,20 @@
         if (m[13] != null) { blocks.push({ type: "heading", value: String(m[13]).trim() }); cursor = start + m[0].length; continue; }
         if (m[14] != null) { blocks.push({ type: "note", value: String(m[14]).trim() }); cursor = start + m[0].length; continue; }
         if (m[15] != null) {
-          const items = String(m[15]).split("|").map((x) => x.trim()).filter(Boolean);
+          const items = splitListItems(m[15]);
           if (items.length) blocks.push({ type: "list", ordered: false, items });
           cursor = start + m[0].length;
           continue;
         }
         if (m[16] != null) {
-          const items = String(m[16]).split("|").map((x) => x.trim()).filter(Boolean);
+          const items = splitListItems(m[16]);
           if (items.length) blocks.push({ type: "list", ordered: true, items });
+          cursor = start + m[0].length;
+          continue;
+        }
+        if (m[17] != null) {
+          const val = String(m[17]).trim();
+          if (val) blocks.push({ type: "paragraph", value: val });
           cursor = start + m[0].length;
           continue;
         }
@@ -1592,16 +1736,17 @@
         return '<div class="news-preview-empty">在正文输入内容后，这里会显示排版预览。</div>';
       }
       return blocks.map((block) => {
-        if (block.type === "heading") return `<h4 class="news-preview-h2">${escapeHtml(block.value)}</h4>`;
-        if (block.type === "note") return `<p class="news-preview-note">${escapeHtml(block.value)}</p>`;
+        if (block.type === "heading") return `<h4 class="news-preview-h2">${inlineMarkup(block.value)}</h4>`;
+        if (block.type === "note") return `<p class="news-preview-note">${inlineMarkup(block.value)}</p>`;
+        if (block.type === "paragraph") return `<p class="news-preview-p">${inlineMarkup(block.value)}</p>`;
         if (block.type === "list") {
           const tag = block.ordered ? "ol" : "ul";
-          const items = block.items.map((li) => `<li>${escapeHtml(li)}</li>`).join("");
+          const items = block.items.map((li) => `<li>${inlineMarkup(li)}</li>`).join("");
           return `<${tag} class="news-preview-list">${items}</${tag}>`;
         }
         if (block.type === "image_link") return `<div class="news-preview-img">商品跳转图：第 ${Math.max(1, Number(block.no) || 1)} 张（${escapeHtml(block.layout || "full")}）→ ${escapeHtml(block.linkUrl || "#")}（${escapeHtml(block.linkLabel || "查看商品详情")}）</div>`;
         if (block.type === "image") return `<div class="news-preview-img">图片占位：第 ${Math.max(1, Number(block.no) || 1)} 张（${escapeHtml(block.layout || "full")}）</div>`;
-        return `<p>${escapeHtml(block.value)}</p>`;
+        return `<p>${inlineMarkup(block.value)}</p>`;
       }).join("");
     };
     const refreshNewsPreview = (root) => {
@@ -1634,6 +1779,11 @@
         note: "\n[note]这里写强调内容[/note]\n",
         ul: "\n[ul]要点1|要点2|要点3[/ul]\n",
         ol: "\n[ol]步骤1|步骤2|步骤3[/ol]\n",
+        p: "\n[p]这里写段落内容。[/p]\n",
+        b: "[b]加粗文字[/b]",
+        big: "[big]放大文字[/big]",
+        red: "[red]红色文字[/red]",
+        link: "[link]https://example.com|链接文字[/link]",
       };
       insertAtCursor(textarea, templates[tag] || "");
     };
@@ -1644,6 +1794,11 @@
         note: "\n[note]这里写强调内容[/note]\n",
         ul: "\n[ul]要点1|要点2|要点3[/ul]\n",
         ol: "\n[ol]步骤1|步骤2|步骤3[/ol]\n",
+        p: "\n[p]这里写段落内容。[/p]\n",
+        b: "[b]加粗文字[/b]",
+        big: "[big]放大文字[/big]",
+        red: "[red]红色文字[/red]",
+        link: "[link]https://example.com|链接文字[/link]",
       };
       insertAtCursor(textarea, templates[tag] || "");
     };
@@ -1657,16 +1812,17 @@
         return '<div class="news-preview-empty">在详情页正文输入内容后，这里会显示排版预览。</div>';
       }
       return blocks.map((block) => {
-        if (block.type === "heading") return `<h4 class="news-preview-h2">${escapeHtml(block.value)}</h4>`;
-        if (block.type === "note") return `<p class="news-preview-note">${escapeHtml(block.value)}</p>`;
+        if (block.type === "heading") return `<h4 class="news-preview-h2">${inlineMarkup(block.value)}</h4>`;
+        if (block.type === "note") return `<p class="news-preview-note">${inlineMarkup(block.value)}</p>`;
+        if (block.type === "paragraph") return `<p class="news-preview-p">${inlineMarkup(block.value)}</p>`;
         if (block.type === "list") {
           const tag = block.ordered ? "ol" : "ul";
-          const items = block.items.map((li) => `<li>${escapeHtml(li)}</li>`).join("");
+          const items = block.items.map((li) => `<li>${inlineMarkup(li)}</li>`).join("");
           return `<${tag} class="news-preview-list">${items}</${tag}>`;
         }
         if (block.type === "image_link") return `<div class="news-preview-img">商品跳转图：第 ${Math.max(1, Number(block.no) || 1)} 张（${escapeHtml(block.layout || "full")}）→ ${escapeHtml(block.linkUrl || "#")}（${escapeHtml(block.linkLabel || "查看商品详情")}）</div>`;
         if (block.type === "image") return `<div class="news-preview-img">插图占位：第 ${Math.max(1, Number(block.no) || 1)} 张（${escapeHtml(block.layout || "full")}）</div>`;
-        return `<p>${escapeHtml(block.value)}</p>`;
+        return `<p>${inlineMarkup(block.value)}</p>`;
       }).join("");
     };
     const refreshServicePreview = (root) => {
@@ -1824,9 +1980,10 @@
         refreshServicePreview(row);
       }
       if (el.closest("[data-insert-service-tag]")) {
-        const row = el.closest(".item-row");
+        const btn = el.closest("[data-insert-service-tag]");
+        const row = btn.closest(".item-row");
         const area = row?.querySelector('textarea[name="services_detail_body"]');
-        const tag = (el.getAttribute("data-insert-service-tag") || "").toLowerCase();
+        const tag = (btn.getAttribute("data-insert-service-tag") || "").toLowerCase();
         if (!area || !tag) return;
         insertServiceTag(area, tag);
         refreshServicePreview(row);
@@ -1841,9 +1998,10 @@
         refreshNewsPreview(root);
       }
       if (el.closest("[data-insert-news-tag]")) {
-        const root = el.closest(".news-item, .news-create");
+        const btn = el.closest("[data-insert-news-tag]");
+        const root = btn.closest(".news-item, .news-create");
         const area = root?.querySelector('textarea[name="body"]');
-        const tag = (el.getAttribute("data-insert-news-tag") || "").toLowerCase();
+        const tag = (btn.getAttribute("data-insert-news-tag") || "").toLowerCase();
         if (!area || !tag) return;
         insertNewsTag(area, tag);
         refreshNewsPreview(root);

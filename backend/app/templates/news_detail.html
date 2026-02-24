@@ -152,6 +152,16 @@
       white-space: pre-wrap;
       padding: .72rem .85rem;
     }
+    .news-detail-paragraph {
+      margin: 0;
+      line-height: 1.9;
+      color: #3d4652;
+      white-space: pre-wrap;
+      word-break: break-word;
+      text-indent: 2em;
+    }
+    .news-content .text-large { font-size: 1.15em; font-weight: 600; }
+    .news-content .text-red { color: #c0392b; font-size: inherit; font-weight: inherit; }
     .news-detail-list {
       margin: 0;
       color: #3d4652;
@@ -329,22 +339,24 @@
           <div class="news-content">
             {% for block in news_content_blocks or [] %}
               {% if block.type == "text" %}
-                <p class="news-detail-body">{{ block.value }}</p>
+                <p class="news-detail-body">{{ block.value | inline_markup }}</p>
               {% elif block.type == "heading" %}
-                <h2 class="news-detail-heading">{{ block.value }}</h2>
+                <h2 class="news-detail-heading">{{ block.value | inline_markup }}</h2>
               {% elif block.type == "note" %}
-                <p class="news-detail-note">{{ block.value }}</p>
+                <p class="news-detail-note">{{ block.value | inline_markup }}</p>
+              {% elif block.type == "paragraph" %}
+                <p class="news-detail-paragraph">{{ block.value | inline_markup }}</p>
               {% elif block.type == "list" %}
                 {% if block.ordered %}
                   <div class="news-detail-list ordered">
                     {% for li in block.list_items %}
-                      <p class="news-detail-list-item">{{ li }}</p>
+                      <p class="news-detail-list-item">{{ li | inline_markup }}</p>
                     {% endfor %}
                   </div>
                 {% else %}
                   <div class="news-detail-list unordered">
                     {% for li in block.list_items %}
-                      <p class="news-detail-list-item">{{ li }}</p>
+                      <p class="news-detail-list-item">{{ li | inline_markup }}</p>
                     {% endfor %}
                   </div>
                 {% endif %}
