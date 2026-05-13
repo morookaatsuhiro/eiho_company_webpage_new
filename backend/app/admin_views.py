@@ -29,6 +29,47 @@ from .schemas import HomeUpdate, ServiceItem, StrengthItem, HeroStatItem, Concep
 router = APIRouter()
 
 
+def _normalize_image_list(raw) -> list[str]:
+    """把详情页图片字段统一规范化为一个 URL 列表。
+
+    设计要点：
+    - 字符串输入（管理后台 textarea）只按换行切分，绝不再按逗号切分；
+      许多图床（Wix、Cloudinary 等）会在 URL 路径里把 `w_1916,h_1276,q_90`
+      这种参数用逗号串起来，按逗号切会把单个 URL 切碎。
+    - 列表输入兼容三种历史格式：纯字符串、{"url": ...} / {"src": ...} 字典、
+      以及曾因旧版逗号切分 bug 而被切成碎片的多段字符串。
+    - 自愈逻辑：如果某一项不是以 http(s)://、/、data: 开头，认为它是上一项 URL
+      的延续，自动用逗号拼回去，这样旧数据无需手动重粘贴也能正确渲染。
+    """
+    candidates: list[str] = []
+    if isinstance(raw, str):
+        candidates = [line.strip() for line in raw.splitlines() if line.strip()]
+    elif isinstance(raw, list):
+        for line in raw:
+            if isinstance(line, dict):
+                value = str(line.get("url") or line.get("src") or "").strip()
+            else:
+                value = str(line).strip()
+            if value:
+                candidates.append(value)
+    if not candidates:
+        return []
+
+    glued: list[str] = []
+    for value in candidates:
+        is_url_head = (
+            value.startswith("http://")
+            or value.startswith("https://")
+            or value.startswith("/")
+            or value.startswith("data:")
+        )
+        if not is_url_head and glued:
+            glued[-1] = f"{glued[-1]},{value}"
+        else:
+            glued.append(value)
+    return glued
+
+
 def _parse_services(services_json: str) -> list:
     """将 JSON 字符串解析为 ServiceItem 列表，缺字段补空字符串"""
     raw = json.loads(services_json) if services_json.strip() else []
@@ -38,24 +79,7 @@ def _parse_services(services_json: str) -> list:
     for item in raw:
         if not isinstance(item, dict):
             continue
-        detail_images_raw = item.get("detail_images") or []
-        if isinstance(detail_images_raw, str):
-            detail_images = [
-                line.strip()
-                for line in detail_images_raw.replace("，", ",").replace(",", "\n").splitlines()
-                if line.strip()
-            ]
-        elif isinstance(detail_images_raw, list):
-            detail_images = []
-            for line in detail_images_raw:
-                if isinstance(line, dict):
-                    value = str(line.get("url") or line.get("src") or "").strip()
-                else:
-                    value = str(line).strip()
-                if value:
-                    detail_images.append(value)
-        else:
-            detail_images = []
+        detail_images = _normalize_image_list(item.get("detail_images") or [])
 
         detail_files_raw = item.get("detail_files") or []
         detail_files = []
@@ -588,11 +612,7 @@ def admin_save(
             detail_images_raw = detail_images_values[i] if i < len(detail_images_values) else ""
             detail_files_raw = detail_files_values[i] if i < len(detail_files_values) else ""
 
-            detail_images = [
-                line.strip()
-                for line in str(detail_images_raw).replace("，", ",").replace(",", "\n").splitlines()
-                if line.strip()
-            ]
+            detail_images = _normalize_image_list(detail_images_raw)
 
             detail_files = []
             for line in str(detail_files_raw).splitlines():

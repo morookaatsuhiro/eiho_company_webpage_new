@@ -35,7 +35,7 @@ from .crud import (
     get_news,
 )
 from .schemas import HomePublic, HomeUpdate, ContactRequest, NewsPublic
-from .admin_views import router as admin_router
+from .admin_views import router as admin_router, _normalize_image_list
 from .auth import is_logged_in
 from .mail import send_contact_email
 
@@ -746,24 +746,7 @@ def service_detail(service_index: int, request: Request, db: Session = Depends(g
     if not isinstance(raw, dict):
         raise HTTPException(status_code=404, detail="Service not found")
 
-    detail_images_raw = raw.get("detail_images") or []
-    if isinstance(detail_images_raw, str):
-        detail_images = [
-            line.strip()
-            for line in detail_images_raw.replace("，", ",").replace(",", "\n").splitlines()
-            if line.strip()
-        ]
-    elif isinstance(detail_images_raw, list):
-        detail_images = []
-        for line in detail_images_raw:
-            if isinstance(line, dict):
-                value = str(line.get("url") or line.get("src") or "").strip()
-            else:
-                value = str(line).strip()
-            if value:
-                detail_images.append(value)
-    else:
-        detail_images = []
+    detail_images = _normalize_image_list(raw.get("detail_images") or [])
 
     detail_files_raw = raw.get("detail_files") or []
     detail_files = []
